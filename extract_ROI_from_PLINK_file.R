@@ -131,6 +131,5 @@ create_plink_script <- function(chunk_files, windows_df, script_name = "plink_ex
   return(merged[, c("CpG_ID", "CpG_Position", "Window_Distance")])
 }
 
-# Usage:
-# Automated (tries direct execution): results <- run_plink_extractions(chunk_files, windows)
-# Manual (includes ibash step): results <- create_plink_script(chunk_files, windows)
+# Run function
+results <- run_plink_extractions(chunk_files, windows)
