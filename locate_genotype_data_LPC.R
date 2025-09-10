@@ -4,9 +4,9 @@
 
 # windows_df is output from get_windows.R
 
-# function to find overlapping chunk files
-find_chunk_files <- function(windows_df, file_path = "~/lpc_mount/PMBB-Release-2024-3.0/Imputed/chunked_bed_files/") {
-  
+#  function to find overlapping chunk files (only .bed files)
+find_chunk_files <- function(windows_df, file_path = "~/lpc_mount/PMBB-Release-2024-3.0/Imputed/chunked_bed_files") {
+    
   results <- data.frame()
   
   for (i in 1:nrow(windows_df)) {
@@ -15,16 +15,16 @@ find_chunk_files <- function(windows_df, file_path = "~/lpc_mount/PMBB-Release-2
     start_pos <- windows_df$Window_Start[i]
     end_pos <- windows_df$Window_End[i]
     
-    # Find files for this chromosome
-    files <- list.files(file_path, pattern = paste0("*", chromosome, "*"), full.names = TRUE)
+    # Find ONLY .bed files for this chromosome (fixed regex pattern)
+    files <- list.files(file_path, pattern = paste0(".*", chromosome, ".*\\.bed$"), full.names = TRUE)
     
-    # Check each file for overlap
+    # Check each .bed file for overlap
     for (file in files) {
       filename <- basename(file)
       
-      # Extract chunk coordinates: chr*_chunk*_start_end
-      if (grepl(paste0(chromosome, "_chunk[0-9]+_([0-9]+)_([0-9]+)"), filename)) {
-        matches <- regmatches(filename, regexec(paste0(chromosome, "_chunk[0-9]+_([0-9]+)_([0-9]+)"), filename))
+      # Extract chunk coordinates: chr*_chunk*_start_end.bed
+      if (grepl(paste0(chromosome, "_chunk[0-9]+_([0-9]+)_([0-9]+)\\.bed$"), filename)) {
+        matches <- regmatches(filename, regexec(paste0(chromosome, "_chunk[0-9]+_([0-9]+)_([0-9]+)\\.bed$"), filename))
         chunk_start <- as.numeric(matches[[1]][2])
         chunk_end <- as.numeric(matches[[1]][3])
         
@@ -43,14 +43,16 @@ find_chunk_files <- function(windows_df, file_path = "~/lpc_mount/PMBB-Release-2
   
   return(results)
 }
-
+  
+  # Usage:
+  # chunk_files <- find_chunk_files(windows)
 # Example usage ####
 
 # Mount LPC
 # sshfs rorytb@ftdcsub.pmacs.upenn.edu:/static/PMBB/ ~/lpc_mount       
 
 # Run function
-chunk_files <- find_chunk_files(windows)
+chunk_files <- find_chunk_files(windows, file_path = "~/lpc_mount/PMBB-Release-2024-3.0/Imputed/chunked_bed_files")
 
 # Unmount LPC
 # umount ~/lpc_mount
