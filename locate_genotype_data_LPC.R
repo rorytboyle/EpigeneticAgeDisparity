@@ -4,9 +4,7 @@
 
 # windows_df is output from get_windows.R
 
-# Try to mount PMBB
-
-# # Simple function to find overlapping chunk files
+# function to find overlapping chunk files
 find_chunk_files <- function(windows_df, file_path = "~/lpc_mount/PMBB-Release-2024-3.0/Imputed/chunked_bed_files/") {
   
   results <- data.frame()
