@@ -1,16 +1,3 @@
-library(readxl)
-library(sesame)
-sesameDataCache()
-library(BiocParallel)
-library(dplyr)
-library(Rtsne)
-library(ggplot2)
-library(viridis)
-library(parallel)
-library(BiocParallel)
-library(writexl)
-
-
 betas <- readRDS("20250529_raw_betas_848.rds")
 
 rownames(betas) <- sub("_.*", "", rownames(betas))
@@ -29,4 +16,3 @@ head(common_probes)  # Check the first few common probes
 common_probes_all <- readRDS("20250529_cpg_DunedinPACE_all_intersect_MSA.rds")
 length(common_probes_all)  # Number of common probes in the all set
 head(common_probes_all)  # Check the first few common probes in the all set
-
