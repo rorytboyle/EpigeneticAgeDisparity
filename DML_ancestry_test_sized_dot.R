@@ -1,6 +1,6 @@
 # Load required libraries
+# some of the libraries might be unnecessary
 library(readxl)
-library(sesame)
 library(dplyr)
 library(Rtsne)
 library(ggplot2)
