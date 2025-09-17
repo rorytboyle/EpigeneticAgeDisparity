@@ -4,8 +4,7 @@ Probe enrichment analysis workflow steps:
 
 mQTL analysis workflow steps:
 1) Get genomic location of identified CpGs: get_windows.R
-2) Locate imputed genotype data: locate_genotype_data_LPC.R
-     - EDIT SO THAT DIRECTORY IS MOUNTED FROM WITHIN R
+2) Locate imputed genotype data (chunked bed files): locate_genotype_data_LPC.R
 3) Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
      - Update code with MAF flag
      - Update code with LD flag
