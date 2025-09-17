@@ -197,14 +197,11 @@ create_plink_script <- function(chunk_files,
   return(merged[, c("CpG_ID", "CpG_Position", "Window_Distance")])
 }
 
+# Usage ####
+results <- run_plink_extractions(chunk_files, windows, maf = 0.15, ld_prune = TRUE, ld_window = 1500, ld_step = 50, ld_r2 = 0.5)
+
 # Example usage with default parameters (MAF=0.1, LD pruning enabled)
 # results <- run_plink_extractions(chunk_files, windows)
-
-# Example usage with custom parameters
-# results <- run_plink_extractions(chunk_files, windows, maf = 0.15, ld_prune = TRUE, ld_window = 2000)
-
-# Example usage with custom parameters
-# results <- run_plink_extractions(chunk_files, windows, maf = 0.15, ld_prune = TRUE, ld_window = 1500, ld_step = 50, ld_r2 = 0.5)
 
 # Example without LD pruning
 # results <- run_plink_extractions(chunk_files, windows, maf = 0.1, ld_prune = FALSE)
