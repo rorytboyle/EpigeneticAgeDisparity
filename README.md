@@ -10,11 +10,13 @@
 1) Get genomic location of identified CpGs: get_windows.R
 2) Locate imputed genotype data (chunked bed files): locate_genotype_data_LPC.R
 3) Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
-4) **to be updated** Run mQTL analysis: run_mQTL_batch.R
+4) **to be added** Get population specific allele frequencies from gnomAD: 
+5) **to be updated** Run mQTL analysis: run_mQTL_batch.R
      - Update to fix error when using LD pruned and MAF filtered files
      - Update to include covariates in mQTL analysis
+     - Update to include population-specific allele frequencies
      - Color mQTL plots by ancestry group
-5) **to be added** Sanity check for nearby common SNPs: 
+6) **to be added** Sanity check for nearby common SNPs: 
 
 # Cell type deconvolution analysis workflow
 - *requires imputed betas from differential methylation analysis workflow step #1*
