@@ -3,8 +3,7 @@
 2) Run differential methylation analysis: DML_ancestry_test_sized_dot.R
 
 # Probe enrichment analysis workflow
-1) **to be added** Run DMP by genetic ancestry:
-2) **to be added** KnowYourCG analysis:
+1) **to be added** Run probe enrichment on differentially methylated probes by genetic ancestry using KnowYourCG:
 
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: get_windows.R
