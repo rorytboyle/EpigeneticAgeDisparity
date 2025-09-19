@@ -1,6 +1,8 @@
 # Differential methylation analysis workflow
 1) Impute betas from 450k array: mliftover_impute_betas.R
-1) Run differential methylation analysis: DML_ancestry_test_sized_dot.R
+1) **to be updated** Run differential methylation analysis: DML_ancestry_test_sized_dot.R
+     - add legend to plot for size
+     - match color palettes to same palettes as rest of analysis
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
