@@ -4,12 +4,14 @@
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
-1) **to be added** Run probe enrichment on differentially methylated probes by genetic ancestry using KnowYourCG:
+1) **to be updated** Run probe enrichment on differentially methylated probes by genetic ancestry using KnowYourCG and gprofiler2: run_probe_enrichment_analysis.
+     - Summarize analysis results, save analysis output
 
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: get_windows.R
 2) Locate imputed genotype data (chunked bed files): locate_genotype_data_LPC.R
-3) Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
+3) **to be updated** Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
+     - Update PLINK call to create PLINK files with SNP info for intersecting with gnomAD query (see comments on lines 395-407)
 4) **to be added** Get population specific allele frequencies from gnomAD: 
 5) **to be updated** Run mQTL analysis: run_mQTL_batch.R
      - Update to fix error when using LD pruned and MAF filtered files
