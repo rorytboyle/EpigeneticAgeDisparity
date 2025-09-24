@@ -1,6 +1,7 @@
 # This script locates PMBB genotype data (imputed genotypes as PLINK files) on the LPC
 # Author: Rory Boyle & Nadia Dehghani rorytboyle@gmail.com
 # Date: 17/09/2025
+# Updated: 23/09/2025 to create .bim files to be merged with gnomAD allele frequencies
 
 # chunk_files is output from locate_genotype_data_LPC.R
 # results df includes:
@@ -59,10 +60,10 @@ run_plink_extractions <- function(chunk_files,
       cmd1 <- sprintf('echo "Processing %s - Step 1: LD pruning" && plink --bfile "%s" --chr %s --from-bp %d --to-bp %d --indep-pairwise %d %d %g --make-bed --out "%s" 2>&1 | tee "%s_step1.log"',
                       cpg_id, bfile, chromosome, start_bp, end_bp, ld_window, ld_step, ld_r2, ld_output, base_output)
       
-      # Step 2: Extract independent SNPs and apply MAF filter
+      # Step 2: Extract independent SNPs and apply MAF filter - CHANGED TO --make-bed
       final_output <- paste0(base_output, "_ld_maf")
       prune_file <- paste0(ld_output, ".prune.in")
-      cmd2 <- sprintf('echo "Processing %s - Step 2: MAF filtering" && plink --bfile "%s" --extract "%s" --maf %g --recode A --out "%s" 2>&1 | tee "%s_step2.log"',
+      cmd2 <- sprintf('echo "Processing %s - Step 2: MAF filtering" && plink --bfile "%s" --extract "%s" --maf %g --make-bed --out "%s" 2>&1 | tee "%s_step2.log"',
                       cpg_id, ld_output, prune_file, maf, final_output, base_output)
       
       commands <- c(commands, cmd1, cmd2)
@@ -82,9 +83,9 @@ echo "---" >> /project/ftdc_external/PMBB/genetics/extraction_stats.txt
       parse_commands <- c(parse_commands, parse_cmd)
       
     } else {
-      # If no LD pruning, just apply MAF filter directly
+      # If no LD pruning, just apply MAF filter directly - CHANGED TO --make-bed
       output <- paste0(base_output, "_maf")
-      cmd <- sprintf('echo "Processing %s - MAF filtering only" && plink --bfile "%s" --chr %s --from-bp %d --to-bp %d --maf %g --recode A --out "%s" 2>&1 | tee "%s.log"',
+      cmd <- sprintf('echo "Processing %s - MAF filtering only" && plink --bfile "%s" --chr %s --from-bp %d --to-bp %d --maf %g --make-bed --out "%s" 2>&1 | tee "%s.log"',
                      cpg_id, bfile, chromosome, start_bp, end_bp, maf, output, output)
       commands <- c(commands, cmd)
       
@@ -107,6 +108,7 @@ echo "---" >> /project/ftdc_external/PMBB/genetics/extraction_stats.txt
     sprintf("# PLINK extraction script with MAF=%g and LD pruning=%s", maf, ifelse(ld_prune, "yes", "no")),
     if (ld_prune) sprintf("# LD parameters: window=%d kb, step=%d, r²=%g", ld_window, ld_step, ld_r2),
     "# Two-step process: 1) LD pruning, 2) Extract independent SNPs with MAF filter",
+    "# NOTE: Using --make-bed to create PLINK files with SNP info in .bim format",
     "",
     "# Clear previous stats file",
     "rm -f /project/ftdc_external/PMBB/genetics/extraction_stats.txt",
@@ -213,6 +215,7 @@ echo "---" >> /project/ftdc_external/PMBB/genetics/extraction_stats.txt
   
   if (ssh_result == 0) {
     cat("\nPLINK extractions completed successfully!\n")
+    cat("NOTE: Files created with --make-bed format (.bed, .bim, .fam)\n")
     cat(sprintf("Parameters used: MAF=%g, LD pruning=%s\n", maf, ifelse(ld_prune, "yes", "no")))
     if (ld_prune) {
       cat(sprintf("LD parameters: window=%d kb, step=%d, r²=%g\n", ld_window, ld_step, ld_r2))
@@ -386,26 +389,12 @@ create_plink_script <- function(chunk_files,
       cmd1 <- sprintf('echo "Processing %s - Step 1: LD pruning" && plink --bfile "%s" --chr %s --from-bp %d --to-bp %d --indep-pairwise %d %d %g --make-bed --out "%s" 2>&1 | tee "%s_step1.log"',
                       cpg_id, bfile, chromosome, start_bp, end_bp, ld_window, ld_step, ld_r2, ld_output, base_output)
       
-      # Step 2: Extract independent SNPs and apply MAF filter
+      # Step 2: Extract independent SNPs and apply MAF filter - CHANGED TO --make-bed
       final_output <- paste0(base_output, "_ld_maf")
       prune_file <- paste0(ld_output, ".prune.in")
-      cmd2 <- sprintf('echo "Processing %s - Step 2: MAF filtering" && plink --bfile "%s" --extract "%s" --maf %g --recode A --out "%s" 2>&1 | tee "%s_step2.log"',
+      cmd2 <- sprintf('echo "Processing %s - Step 2: MAF filtering" && plink --bfile "%s" --extract "%s" --maf %g --make-bed --out "%s" 2>&1 | tee "%s_step2.log"',
                       cpg_id, ld_output, prune_file, maf, final_output, base_output)
       
-      ## CHANGE LINE 392 --recode A to --make-bed THIS WILL CREATE PLINK FILES WITH SNP INFO IN .BIM (TAKE COL 1 , 4 , 5, 6 from BIM FILE OR)
-      # DELIMIT .gnomAD .json file by - to have chr pos allele 1 allele  =2 into a df
-      # merge  columns by pmbb snp list (BIM file) and gnomAD df (two merges)
-      # merge 1 by chr pos and allele 1 pmbb = allele 1 gnomad and allele 2 pmbb = allele 2 gnomad
-      # merge 2 by chr pos and allele 1 pmbb = allele 2 gnomad and allele 2 pmbb = allele 1 gnomad
-      # Should then have a list of allele freqs (col for every snp with allele freq for each snp)
-      # make sure gnomAD has allele freqs for all the snps in genomic window (should be same in gnomAD as in pmbb query)
-
-      # then filter snps based on diff in allele freq btwn groups (maybe just apply easy threshold that allele freqs are not identifical between groups
-
-      # if there is a difference, than you run the latest plink files and remove SNPs with identical allele freqs between groups
-      # plink command to ouput a .bim file that contains the snps that have different frequencies THIS is then fed into the mQTL analysis
-      # --exclude .txt file with list of SNP names with identifical allele freqs (col 2) THEN run -- recode A --dash out
-  
       commands <- c(commands, cmd1, cmd2)
       
       # Add parsing commands
@@ -423,9 +412,9 @@ echo "---" >> /project/ftdc_external/PMBB/genetics/extraction_stats.txt
       parse_commands <- c(parse_commands, parse_cmd)
       
     } else {
-      # If no LD pruning, just apply MAF filter directly
+      # If no LD pruning, just apply MAF filter directly - CHANGED TO --make-bed
       output <- paste0(base_output, "_maf")
-      cmd <- sprintf('echo "Processing %s - MAF filtering only" && plink --bfile "%s" --chr %s --from-bp %d --to-bp %d --maf %g --recode A --out "%s" 2>&1 | tee "%s.log"',
+      cmd <- sprintf('echo "Processing %s - MAF filtering only" && plink --bfile "%s" --chr %s --from-bp %d --to-bp %d --maf %g --make-bed --out "%s" 2>&1 | tee "%s.log"',
                      cpg_id, bfile, chromosome, start_bp, end_bp, maf, output, output)
       commands <- c(commands, cmd)
       
@@ -448,6 +437,7 @@ echo "---" >> /project/ftdc_external/PMBB/genetics/extraction_stats.txt
     sprintf("# PLINK extraction script with MAF=%g and LD pruning=%s", maf, ifelse(ld_prune, "yes", "no")),
     if (ld_prune) sprintf("# LD parameters: window=%d kb, step=%d, r²=%g", ld_window, ld_step, ld_r2),
     if (ld_prune) "# Two-step process: 1) LD pruning, 2) Extract independent SNPs with MAF filter",
+    "# NOTE: Using --make-bed to create PLINK files with SNP info in .bim format",
     "",
     "# Clear previous stats file",
     "rm -f /project/ftdc_external/PMBB/genetics/extraction_stats.txt",
@@ -468,6 +458,7 @@ echo "---" >> /project/ftdc_external/PMBB/genetics/extraction_stats.txt
   system(paste("chmod +x", script_name))
   
   cat(paste("Created script:", script_name, "\n"))
+  cat("NOTE: Files will be created with --make-bed format (.bed, .bim, .fam)\n")
   cat(sprintf("Parameters: MAF=%g, LD pruning=%s\n", maf, ifelse(ld_prune, "yes", "no")))
   if (ld_prune) {
     cat(sprintf("LD parameters: window=%d kb (%.1f Mb), step=%d, r²=%g\n", 
