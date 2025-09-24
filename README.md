@@ -15,12 +15,11 @@
 3) **to be updated** Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
      - Update PLINK call to create PLINK files with SNP info for intersecting with gnomAD query (see comments on lines 395-407)
 4) Get population specific allele frequencies from gnomAD: get_pop_specific_allele_freqs.R
-5) **to be added** Get SNP summary table with allele frequencies: 
-6) **to be updated** Run mQTL analysis: run_mQTL_batch.R
+5) **to be updated** Run mQTL analysis: run_mQTL_batch.R
      - Update to fix error when using LD pruned and MAF filtered files
      - Update to include covariates in mQTL analysis
-     - Update to include population-specific allele frequencies
      - Color mQTL plots by ancestry group
+6) **to be added** get summary table of SNPs from mQTL analysis with population-specific allele frequencies: 
 7) **to be added** Sanity check for nearby common SNPs: 
 
 # Cell type deconvolution analysis workflow
