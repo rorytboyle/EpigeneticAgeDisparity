@@ -307,7 +307,7 @@ summarize_populations <- function(combined_snps) {
 # Usage:
 
 # Query gnomAD for all populations
-results <- query_gnomad_all_populations(windows_df, output_dir = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/gnomad_output")
+results <- query_gnomad_all_populations(windows, output_dir = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/gnomad_output")
 
 # Combine into master list
 master_snps <- combine_snp_lists(results)
@@ -317,4 +317,3 @@ pop_summary <- summarize_populations(master_snps)
 
 # View results
 head(master_snps)
-names(master_snps)[grepl("^af_", names(master_snps))]
