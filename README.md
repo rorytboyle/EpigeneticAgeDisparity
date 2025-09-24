@@ -18,7 +18,7 @@
      - Update to fix error when using LD pruned and MAF filtered files
      - Update to include covariates in mQTL analysis
      - Color mQTL plots by ancestry group
-6) **to be added** get summary table of SNPs from mQTL analysis with population-specific allele frequencies: 
+6) **to be added** get summary table of SNPs from mQTL analysis with population-specific allele frequencies: summarise_mQTL_allele_freqs.R
 7) **to be added** Sanity check for nearby common SNPs: 
 
 # Cell type deconvolution analysis workflow
