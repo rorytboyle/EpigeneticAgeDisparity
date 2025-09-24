@@ -12,7 +12,7 @@
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: get_windows.R
 2) Locate imputed genotype data (chunked bed files): locate_genotype_data_LPC.R
-3) **to be updated** Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
+3) Get ROIs from PLINK files for these data: extract_ROI_from_PLINK_file.R
      - Update PLINK call to create PLINK files with SNP info for intersecting with gnomAD query (see comments on lines 395-407)
 4) Get population specific allele frequencies from gnomAD: get_pop_specific_allele_freqs.R
 5) **to be updated** Run mQTL analysis: run_mQTL_batch.R
