@@ -21,14 +21,14 @@ dunedinPACE_weights <- mPACE_Models$model_weights
 
 
 # Load CpG sites of interest and filter data
-cpg_file_path <- "/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/20250529_cpg_DunedinPACE_intersect_MSA.rds"
+cpg_file_path <- "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/20250529_cpg_DunedinPACE_intersect_MSA.rds"
 cpg_sites <- readRDS(cpg_file_path)
 
-data <- readRDS("/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/PMBBID_IDAT_covariate_class_05082025.rds")
+data <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/PMBBID_IDAT_covariate_class_05082025.rds")
 data <- data %>% filter(Class %in% c("EUR", "AFR"))
 
 # Load beta values and filter to match metadata
-betasHM450_imputed <- readRDS("20241220_betasHM450_imputed.rds")
+betasHM450_imputed <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/20241220_betasHM450_imputed.rds")
 betasHM450_imputed <- betasHM450_imputed[, data$IDAT_file_name]  # Filter betas to match meta1 IDATs
 
 
@@ -50,7 +50,7 @@ results <- topTable(fit, coef = 2, number = Inf, adjust.method = "fdr")
 
 # Add delta beta (AFR - EUR)
 results$delta_beta <- rowMeans(betas[, group == "AFR"], na.rm = TRUE) -
-                      rowMeans(betas[, group == "EUR"], na.rm = TRUE)
+  rowMeans(betas[, group == "EUR"], na.rm = TRUE)
 
 # Convert delta beta to percent
 results$delta_beta_pct <- results$delta_beta * 100
@@ -96,10 +96,11 @@ results <- results %>%
 
 # Define new color palette
 ancestry_colors <- c(
-  "Higher in AFR" = "orange",
-  "Higher in EUR" = "green",
+  "Higher in AFR" = "#E69F00",  # orange
+  "Higher in EUR" = "#009E73",  # bluish green
   "Not Significant" = "grey"
 )
+
 # Convert to proper data.frame
 results_df <- as.data.frame(results)
 
@@ -113,28 +114,38 @@ results_sig <- results_df %>%
   filter(adj.P.Val < 0.05, abs(delta_beta * 100) > 5) 
 
 max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
-# Plot
-volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, y = -log10(adj.P.Val), color = Ancestry,  size = point_size)) +
+
+# Plot with size legend
+volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, y = -log10(adj.P.Val), 
+                                           color = Ancestry, size = abs_weight)) +
   geom_point(alpha = 0.6, shape = 16) +
-  scale_size_identity() +
-    geom_text_repel(
-      data = results_sig,
-      aes(label = rownames(results_sig)),
-      size = 5,
-      max.overlaps = 20,
-      box.padding = 0.4,
-      point.padding = 0.5,
-      segment.color = 'black',
-      nudge_x = case_when(
-        rownames(results_sig) == "cg00151250" ~ 4,               # move right
-        # rownames(results_sig) == "cg25243766" ~ 8,               # move right
-        results_sig$delta_beta > 0 ~ 3,
-        TRUE ~ -4
-      ),
-      nudge_y = ifelse(rownames(results_sig) == "cg00151250", 7, 0.5)  # push cg00151250 higher
+  scale_size_continuous(
+    name = "DunedinPACE\nWeight (absolute)",
+    range = c(min_size, max_size),
+    breaks = pretty(results$abs_weight, n = 4),
+    labels = function(x) sprintf("%.3f", x)
+  ) +
+  geom_text_repel(
+    data = results_sig,
+    aes(label = rownames(results_sig)),
+    size = 5,
+    max.overlaps = 20,
+    box.padding = 0.4,
+    point.padding = 0.5,
+    segment.color = 'black',
+    nudge_x = case_when(
+      rownames(results_sig) == "cg00151250" ~ 4,               # move right
+      # rownames(results_sig) == "cg25243766" ~ 8,               # move right
+      results_sig$delta_beta > 0 ~ 3,
+      TRUE ~ -4
+    ),
+    nudge_y = ifelse(rownames(results_sig) == "cg00151250", 7, 0.5)  # push cg00151250 higher
   ) +
   scale_color_manual(values = ancestry_colors) +
-  guides(color = guide_legend(override.aes = list(shape = 16, size = 1.5))) +
+  guides(
+    color = guide_legend(override.aes = list(size = 3)),
+    size = guide_legend(override.aes = list(color = "black"))
+  ) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey") +
   annotation_custom(
     grob = grid::textGrob(
@@ -172,16 +183,16 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, y = -log10(adj.
     legend.title = element_text(size = 16),       # Size of legend title
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
-    axis.ticks = element_line(color = "black", size = 0.3),
+    axis.ticks = element_line(color = "black", linewidth = 0.3),
     axis.ticks.length = unit(0.2, "cm"),
-    plot.margin = margin(5.5, 5.5, 5.5, 40, "pt")
+    plot.margin = margin(5.5, 20, 5.5, 20, "pt")
   )
 
 # Display
 print(volcano_by_ancestry)
 
 # Optional: Save plot
-ggsave("20250915_171_volcano_by_ancestry.png", plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
+ggsave("20250915_171_volcano_by_ancestry.png", plot = volcano_by_ancestry, width = 12, height = 7, dpi = 300)
 
 n_total_sig <- results_df %>%
   filter(adj.P.Val < 0.05) %>%
@@ -213,7 +224,7 @@ results <- topTable(fit, coef = 2, number = Inf, adjust.method = "none")
 
 # Add delta beta (AFR - EUR)
 results$delta_beta <- rowMeans(betas[, group == "AFR"], na.rm = TRUE) -
-                      rowMeans(betas[, group == "EUR"], na.rm = TRUE)
+  rowMeans(betas[, group == "EUR"], na.rm = TRUE)
 
 # Convert delta beta to percent
 results$delta_beta_pct <- results$delta_beta * 100
@@ -267,29 +278,39 @@ results_sig <- results_df %>%
   filter(adj.P.Val < 0.05, abs(delta_beta * 100) > 5) 
 
 max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
-# Plot
-volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, y = -log10(adj.P.Val), color = Ancestry,  size = point_size)) +
+
+# Plot with size legend
+volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, y = -log10(adj.P.Val), 
+                                           color = Ancestry, size = abs_weight)) +
   geom_point(alpha = 0.6, shape = 16) +
-  scale_size_identity() +
-    geom_text_repel(
-      data = results_sig,
-      aes(label = rownames(results_sig)),
-      size = 5,
-      max.overlaps = 20,
-      box.padding = 0.4,
-      point.padding = 0.5,
-      segment.color = 'black',
-      # nudge_x = ifelse(results_sig$delta_beta > 0, 2, -2),  # smart nudging left/right
-      nudge_x = case_when(
-        rownames(results_sig) == "cg00151250" ~ 4,               # move right
-        # rownames(results_sig) == "cg25243766" ~ 8,               # move right
-        results_sig$delta_beta > 0 ~ 3,
-        TRUE ~ -4
-      ),
-      nudge_y = ifelse(rownames(results_sig) == "cg00151250", 7, 0.5)  # push cg00151250 higher
+  scale_size_continuous(
+    name = "DunedinPACE\nWeight (absolute)",
+    range = c(min_size, max_size),
+    breaks = pretty(results$abs_weight, n = 4),
+    labels = function(x) sprintf("%.3f", x)
+  ) +
+  geom_text_repel(
+    data = results_sig,
+    aes(label = rownames(results_sig)),
+    size = 5,
+    max.overlaps = 20,
+    box.padding = 0.4,
+    point.padding = 0.5,
+    segment.color = 'black',
+    # nudge_x = ifelse(results_sig$delta_beta > 0, 2, -2),  # smart nudging left/right
+    nudge_x = case_when(
+      rownames(results_sig) == "cg00151250" ~ 4,               # move right
+      # rownames(results_sig) == "cg25243766" ~ 8,               # move right
+      results_sig$delta_beta > 0 ~ 3,
+      TRUE ~ -4
+    ),
+    nudge_y = ifelse(rownames(results_sig) == "cg00151250", 7, 0.5)  # push cg00151250 higher
   ) +
   scale_color_manual(values = ancestry_colors) +
-  guides(color = guide_legend(override.aes = list(shape = 16, size = 1.5))) +
+  guides(
+    color = guide_legend(override.aes = list(size = 3)),
+    size = guide_legend(override.aes = list(color = "black"))
+  ) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey") +
   annotation_custom(
     grob = grid::textGrob(
@@ -328,16 +349,16 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, y = -log10(adj.
     legend.title = element_text(size = 16),       # Size of legend title
     axis.text.x = element_text(size = 14),
     axis.text.y = element_text(size = 14),
-    axis.ticks = element_line(color = "black", size = 0.3),
+    axis.ticks = element_line(color = "black", linewidth = 0.3),
     axis.ticks.length = unit(0.2, "cm"),
-    plot.margin = margin(5.5, 5.5, 5.5, 40, "pt")
+    plot.margin = margin(5.5, 20, 5.5, 20, "pt")
   )
 
 # Display
-print(volcano_by_ancestry)
+# print(volcano_by_ancestry)
 
 # Optional: Save plot
-ggsave("20250915_171_volcano_by_ancestry_unadjusted.png", plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
+ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251105_171_volcano_by_ancestry.png", plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
 
 n_total_sig <- results_df %>%
   filter(adj.P.Val < 0.05) %>%
@@ -351,6 +372,3 @@ n_eur_sig <- results_df %>%
 cat("Total significant CpGs:", n_total_sig, "\n")
 cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
-
-
-
