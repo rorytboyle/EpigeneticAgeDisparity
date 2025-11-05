@@ -1,11 +1,12 @@
 # Differential methylation analysis workflow
 1) Impute betas from 450k array: mliftover_impute_betas.R
-2) Run differential methylation analysis: DML_ancestry_test_sized_dot.R
+2) Run differential methylation analysis by genetic ancestry: DML_ancestry_test_sized_dot.R
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
-1) **to be updated** Run probe enrichment on differentially methylated probes by genetic ancestry using KnowYourCG and gprofiler2: run_probe_enrichment_analysis.
-     - Summarize analysis results, save analysis output
+1) Run gene enrichment analysis of differentially methylated probes using KnowYourCG: gene_enrichment_analysis.R
+2) **to be added** Run location analysis of differentially methylated probes: genomic_location_analysis.R
+   - see probe_enrichment_analysis_WORKING.R
 
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: get_windows.R
