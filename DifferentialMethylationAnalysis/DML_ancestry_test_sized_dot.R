@@ -1,7 +1,7 @@
 # This script runs a differential methylation analysis by genetic ancestry group across DunedinPACE CpGs and creates a volcano plot of the results
 # Author: Hao Xu & Rory Boyle rorytboyle@gmail.com
 # Date: 17/09/2025
-# Updated: 05/10/2025 to simplify code, add label for size, update color palette, and fixed 'a' artefact appearing beneath legend points
+# Updated: 05/10/2025 to simplify code, add label for size, update color palette, fixed 'a' artefact appearing beneath legend points, save results for probe enrichment analysis
 
 # Load required libraries
 library(dplyr)
@@ -157,10 +157,7 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     plot.margin = margin(5.5, 20, 5.5, 20, "pt")
   )
 
-# Save plot
-ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251105_171_volcano_by_ancestry.png", 
-       plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
-
+volcano_by_ancestry
 # Print summary statistics
 n_total_sig <- sum(results_df$adj.P.Val < 0.05)
 n_afr_sig <- sum(results_df$adj.P.Val < 0.05 & results_df$Ancestry == "Higher in AFR")
@@ -169,3 +166,15 @@ n_eur_sig <- sum(results_df$adj.P.Val < 0.05 & results_df$Ancestry == "Higher in
 cat("Total significant CpGs:", n_total_sig, "\n")
 cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
+
+# Save plot
+ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251105_171_volcano_by_ancestry.png", 
+       plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
+
+# Save results
+## add CpG as colname
+results_df <- results_df %>%
+  tibble::rownames_to_column(var = "CpG")
+
+write.csv(results_df, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251105_171_DiffMethylAnalysis_results.csv", row.names = TRUE)
+
