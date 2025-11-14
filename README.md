@@ -4,9 +4,9 @@
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
-1) Run gene enrichment analysis of differentially methylated probes using KnowYourCG: gene_enrichment_analysis.R
+1) Run gene enrichment analysis of differentially methylated probes using KnowYourCG and query enriched genes in GWAS Catalog: gene_enrichment_analysis_with_GWASCatalog.R
 2) **to be added** Run location analysis of differentially methylated probes: genomic_location_analysis.R
-   - see probe_enrichment_analysis_WORKING.R
+   - see probe_enrichment_analysis_WORKING.R FOR OTHER STOPS IN ENRICHMENT ANALYSIS
 
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: get_windows.R
