@@ -11,6 +11,7 @@ library(ggplot2)
 library(patchwork)
 library(gwasrapidd)
 library(readr)
+library(stringr)
 
 # Extract differentially methylated CpGs ####
 # Cache databases (only needed once)
@@ -123,7 +124,7 @@ print(combined_genes) # is filtering to overlap = 2 ok?
 
 # Save
 ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/gene_enrichment_analysis_overlap2.png", combined_genes, width = 6, height = 4, dpi = 300)
-write.csv('/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/gene_enrichment_results_overlap2.csv', gene_res, row.names = FALSE)
+write.csv(gene_res, '/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/gene_enrichment_results_overlap2.csv', row.names = FALSE)
 
 # Query GWAS catalog for enriched genes ####
 my_genes <- sig_genes %>%
@@ -394,5 +395,53 @@ final_results_unique <- final_results %>%
 
 cat("Found", nrow(final_results_unique), "unique variant-trait associations involving these genes:", unique(final_results$gene), "\n\n")
 
+# Plot gene-trait associations
+# Prepare data with aggregation
+viz_data <- final_results %>%
+  mutate(
+    trait_wrapped = str_wrap(trait, width = 40),
+    variant_label = variant_id
+  ) %>%
+  arrange(gene, variant_id, trait_wrapped) %>%
+  # Group by position and aggregate
+  group_by(gene, variant_label, trait_wrapped) %>%
+  summarize(
+    n_associations = dplyr::n(),
+    best_pvalue = min(pvalue, na.rm = TRUE),
+    neg_log10_p = -log10(best_pvalue),
+    .groups = "drop"
+  ) %>%
+  mutate(trait_wrapped = factor(trait_wrapped, levels = unique(trait_wrapped)))
+
+p <- ggplot(viz_data, aes(x = variant_label, 
+                          y = trait_wrapped,
+                          size = n_associations, 
+                          color = neg_log10_p)) +
+  geom_point(alpha = 0.8) +
+  scale_size_continuous(range = c(2, 10), name = "N Associations", 
+                        breaks = function(x) unique(floor(pretty(seq(min(x), max(x)))))) +
+  scale_color_gradient(low = "lightblue", high = "darkred",
+                       name = expression(-log[10](italic(P)))) +
+  facet_grid(. ~ gene, scales = "free_x", space = "free_x") +
+  labs(x = "Variant", y = "Trait", 
+       title = "Gene-Trait Associations from GWAS Catalog") +
+  theme_minimal(base_size = 15) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 7),
+    axis.text.y = element_text(size = 8, lineheight = 0.9),
+    strip.text = element_text(face = "bold", size = 11),
+    strip.background = element_rect(fill = "gray90", color = "gray60"),
+    legend.position = "right",
+    panel.spacing = unit(0.5, "lines")
+  )
+
+
+print(p)
 # Save
-write.csv(final_results, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/gene_neurodegenerative_associations.csv", row.names = FALSE)
+write.csv(final_results, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/gene_enrichment_overlap2_neurodegenerative_associations.csv", row.names = FALSE)
+ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/gene_enrichment_overlap2_neurodegenerative_associations_plot.png",
+       p, 
+       width = 10.3, 
+       height = 5.47, 
+       units = "in",
+       dpi = 300)
