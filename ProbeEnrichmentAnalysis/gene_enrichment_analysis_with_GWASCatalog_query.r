@@ -6,12 +6,14 @@
 library(sesame)
 library(sesameData)
 library(knowYourCG)
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
+# library(dplyr)
+# library(ggplot2)
 library(patchwork)
 library(gwasrapidd)
-library(readr)
-library(stringr)
+# library(readr)
+# library(stringr)
+library(gprofiler2)
 
 # Extract differentially methylated CpGs ####
 # Cache databases (only needed once)
