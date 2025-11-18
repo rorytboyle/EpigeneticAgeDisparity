@@ -8,6 +8,7 @@
 2) Run pathway analysis of genes enriched for differentially methylated cpgs: pathway_analysis.R
    - *requires genes from gene enrichment analysis*
 4) **to be added** Run probe enrichment analyses of differentially methylated probes: probe_enrichment_analysis_WORKING.R
+   - NEED TO CLEAN UP THIS SCRIPT (REMOVE GENE ENRICHMENT & PATHWAY ANALYSIS)
    
 
 # mQTL analysis workflow
