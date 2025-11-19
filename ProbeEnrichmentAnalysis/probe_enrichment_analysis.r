@@ -454,21 +454,23 @@ metagene_res <- testEnrichment(
   platform = "EPIC",
   databases = "KYCG.EPIC.metagene.20220126"
 )
-metagene_df <- metagene_res %>%
-  as.data.frame() %>%
-  arrange(FDR)
-cat("Gene region enrichment:\n")
-print(metagene_df %>% select(dbname, estimate, overlap, p.value, FDR))
 
 # Get the actual labels from the database
 metagene_db <- getDBs("EPIC.metagene")
 metagene_actual_labels <- sapply(metagene_db, function(x) attr(x, "label"))
 
-# Add to your dataframe
+# Check if names match
+print(head(names(metagene_actual_labels)))
+print(head(metagene_res$dbname))
+
+# Add to metagene_df with explicit matching
 metagene_df <- metagene_res %>%
   as.data.frame() %>%
   arrange(FDR) %>%
-  mutate(region_label = metagene_actual_labels[as.character(dbname)])
+  mutate(region_label = metagene_actual_labels[match(as.character(dbname), 
+                                                     names(metagene_actual_labels))])
+
+print(metagene_df %>% select(dbname, region_label, estimate, overlap, p.value, FDR))
 
 # Visualize gene regions with actual labels
 p_metagene <- ggplot(metagene_df, aes(x = reorder(region_label, as.numeric(dbname)), 
