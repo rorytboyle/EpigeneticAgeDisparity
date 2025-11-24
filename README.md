@@ -1,7 +1,13 @@
+# Cell type deconvolution analysis workflow
+- *requires imputed betas from differential methylation analysis*
+1) Get cell type proportions: cell_type_deconvolution_EpiDISH.R
+2) Compare cell type proportions: compare_cell_type_proportions.R
+ 
 # Differential methylation analysis workflow
+- *steps 4) and 5) require cell type proportions from cell_type_deconvolution_EpiDISH.R*
 1) Impute betas from 450k array: mliftover_impute_betas.R
-2) **to be updated** Run differential methylation analysis of DunedinPACE by genetic ancestry: DML_DunedinPACE.R
-3) **to be updated** Run differential methylation analysis of Horvath clock by genetic ancestry: DML_Horvath.R
+2) Run differential methylation analysis of DunedinPACE by genetic ancestry: DML_DunedinPACE.R
+3) Run differential methylation analysis of Horvath clock by genetic ancestry: DML_Horvath.R
 4) **to be added** Run differential methylation analysis of DunedinPACE by genetic ancestry, covarying for cell type proportions: DML_DunedinPACE_cell_type_props_adjusted.R
 5) **to be added** Run differential methylation analysis of Horvath clock by genetic ancestry, covarying for cell type proportions: DML_Horvath_cell_type_props_adjusted.R
 
@@ -25,8 +31,3 @@
      - Color mQTL plots by ancestry group
 6) **to be added** get summary table of SNPs from mQTL analysis with population-specific allele frequencies: summarise_mQTL_allele_freqs.R
 7) **to be added** Sanity check for nearby common SNPs: 
-
-# Cell type deconvolution analysis workflow
-- *requires imputed betas from differential methylation analysis*
-1) Get cell type proportions: cell_type_deconvolution_EpiDISH.R
-2) Compare cell type proportions: compare_cell_type_proportions.R
