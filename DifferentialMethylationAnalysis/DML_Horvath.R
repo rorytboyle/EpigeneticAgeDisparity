@@ -237,4 +237,8 @@ ggsave("20251124_347_volcano_by_ancestry.png",
        plot = volcano_by_ancestry, width = 12, height = 7, dpi = 300)
 
 # Save results
+## add CpG as colname
+results_df <- results_df %>%
+  tibble::rownames_to_column(var = "CpG")
+
 write.csv(results_df, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251124_Horvath_DiffMethylAnalysis_results.csv", row.names = TRUE)
