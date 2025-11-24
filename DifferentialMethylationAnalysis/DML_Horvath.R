@@ -1,9 +1,12 @@
+# This script runs a differential methylation analysis by genetic ancestry group across Horvath clock CpGs and creates a volcano plot of the results
+# Author: Hao Xu & Rory Boyle rorytboyle@gmail.com
+# Date: 24/11/2025
+
 # Load required libraries
+library(tidyverse)
 library(readxl)
 library(sesame)
-library(dplyr)
 library(Rtsne)
-library(ggplot2)
 library(viridis)
 library(parallel)
 library(writexl)
@@ -11,22 +14,28 @@ library(circlize)
 library(patchwork)
 library(reshape2)
 library(SummarizedExperiment)
-library(tidyr)
 library(limma)
 library(ggrepel)
 library(grid)
+library(methylclockData) # assumes you have installed methylclockData package: BiocManager::install("methylclockData")
 
-horvath_weights <- readRDS("/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/20251124_cpg_Horvath_weights.rds")
+
+# read in Horvath weights from methylclockData package (verified that they are same coefficients as in Horvath 2013 Genome Biol paper here: HorvathClock_CpG_coefficients_sanity_check.R)
+horvath_weights <- get_coefHorvath() %>%
+  select(CpG = CpGmarker, Weights = CoefficientTraining) %>%
+  # drop the intercept row
+  filter(CpG != "(Intercept)")
+
 
 # Load CpG sites of interest and filter data
-cpg_file_path <- "/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/20251124_cpg_Horvath_intersect_MSA.rds"
+cpg_file_path <- "/Users/rorytb/Library/CloudStorage/Box-Box/PMBB for Rory/DATA/20251124_cpg_Horvath_intersect_MSA.rds"
 cpg_sites <- readRDS(cpg_file_path)
 
-data <- readRDS("/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/PMBBID_IDAT_covariate_class_05082025.rds")
+data <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PMBB for Rory/DATA/PMBBID_IDAT_covariate_class_05082025.rds")
 data <- data %>% filter(Class %in% c("EUR", "AFR"))
 
 # Load beta values and filter to match metadata
-betasHM450_imputed <- readRDS("20241220_betasHM450_imputed.rds")
+betasHM450_imputed <- readRDS('/Users/rorytb/Library/CloudStorage/Box-Box/PMBB for Rory/DATA/20241220_betasHM450_imputed.rds')
 betasHM450_imputed <- betasHM450_imputed[, data$IDAT_file_name]  # Filter betas to match meta1 IDATs
 
 # filter the betas to only include the sites used by the Horvath clock
@@ -45,7 +54,7 @@ results <- topTable(fit, coef = 2, number = Inf, adjust.method = "fdr")
 
 # Add delta beta (AFR - EUR)
 results$delta_beta <- rowMeans(betas[, group == "AFR"], na.rm = TRUE) -
-                      rowMeans(betas[, group == "EUR"], na.rm = TRUE)
+  rowMeans(betas[, group == "EUR"], na.rm = TRUE)
 
 # Add Horvath weights to results
 # Match weights by CpG names
@@ -82,6 +91,42 @@ results_df <- as.data.frame(results)
 results_sig <- results_df %>%
   filter(adj.P.Val < 0.05, abs(delta_beta * 100) > 5) 
 
+# Identify the crowded cluster for manual positioning
+crowded_cpgs <- c("cg16984944", "cg07730301", "cg16744741", "cg06738602", 
+                  "cg25101936", "cg18139769", "cg17274064", "cg12946225", "cg06044899")
+
+results_sig_crowded <- results_sig %>%
+  filter(rownames(.) %in% crowded_cpgs) %>%
+  mutate(
+    manual_nudge_x = case_when(
+      rownames(.) == "cg16984944" ~ 8,
+      rownames(.) == "cg07730301" ~ 7,
+      rownames(.) == "cg16744741" ~ 5,
+      rownames(.) == "cg06738602" ~ 9,
+      rownames(.) == "cg25101936" ~ 6,
+      rownames(.) == "cg18139769" ~ 8,
+      rownames(.) == "cg17274064" ~ 7,
+      rownames(.) == "cg12946225" ~ 4,
+      rownames(.) == "cg06044899" ~ 10,
+      TRUE ~ 5
+    ),
+    manual_nudge_y = case_when(
+      rownames(.) == "cg16984944" ~ 12,
+      rownames(.) == "cg07730301" ~ 2,
+      rownames(.) == "cg16744741" ~ 1,
+      rownames(.) == "cg06738602" ~ 3,
+      rownames(.) == "cg25101936" ~ -1,
+      rownames(.) == "cg18139769" ~ -2,
+      rownames(.) == "cg17274064" ~ -3,
+      rownames(.) == "cg12946225" ~ -2,
+      rownames(.) == "cg06044899" ~ -2,
+      TRUE ~ 0
+    )
+  )
+
+results_sig_other <- results_sig %>%
+  filter(!rownames(.) %in% crowded_cpgs)
+
 # Calculate plot limits
 max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
 
@@ -89,7 +134,7 @@ max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
 max_weight <- max(results$abs_weight, na.rm = TRUE)
 legend_breaks <- c(0, 0.15, 0.3, 0.45, 0.6)
 
-# Create volcano plot
+# Create volcano plot with manual positioning for crowded labels
 volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, 
                                            y = -log10(adj.P.Val), 
                                            color = Ancestry, 
@@ -101,22 +146,33 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     labels = function(x) sprintf("%.2f", x),
     limits = c(0, NA)  # Ensure scale starts at 0
   ) +
+  # Labels for crowded cluster with manual positioning
   geom_text_repel(
-    data = results_sig,
-    aes(label = rownames(results_sig)),
-    size = 5,
-    max.overlaps = 20,
-    box.padding = 0.4,
+    data = results_sig_crowded,
+    aes(label = rownames(results_sig_crowded)),
+    size = 4,
+    box.padding = 0.5,
     point.padding = 0.5,
-    segment.color = 'black',
-    nudge_x = case_when(
-      rownames(results_sig) == "cg17274064" ~ 3,
-      rownames(results_sig) == "cg18139769" ~ 5,
-      # rownames(results_sig) == "cg12946225" ~ -0.5,
-      results_sig$delta_beta > 0 ~ 3,
-      TRUE ~ -4
-    ),
-    nudge_y = ifelse(rownames(results_sig) == "cg17274064" | rownames(results_sig) == "cg18139769", 0, 0.5)
+    segment.color = 'grey30',
+    segment.size = 0.3,
+    min.segment.length = 0,
+    nudge_x = results_sig_crowded$manual_nudge_x,
+    nudge_y = results_sig_crowded$manual_nudge_y,
+    force = 0.5  # Lower force since we're manually positioning
+  ) +
+  # Labels for other points with automatic positioning
+  geom_text_repel(
+    data = results_sig_other,
+    aes(label = rownames(results_sig_other)),
+    size = 4,
+    max.overlaps = 50,
+    box.padding = 1.0,
+    point.padding = 0.8,
+    segment.color = 'grey30',
+    segment.size = 0.3,
+    min.segment.length = 0,
+    force = 2,
+    force_pull = 0.1
   ) +
   scale_color_manual(values = ancestry_colors) +
   guides(
@@ -138,11 +194,11 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
   geom_vline(xintercept = c(-5, 5), linetype = "dashed", color = "grey") +
   scale_x_continuous(
     breaks = seq(-max_delta, max_delta, by = 5),
-    limits = c(-max_delta-5, max_delta+5),
-    expand = expansion(mult = 0.02)
+    limits = c(-max_delta-8, max_delta+8),  # More space for labels
+    expand = expansion(mult = 0.05)
   ) +
   scale_y_continuous(
-    expand = expansion(mult = c(0, 0.05))
+    expand = expansion(mult = c(0.02, 0.15))  # More space at top
   ) +
   labs(
     x = expression(paste(Delta, "β(%)")),
@@ -162,10 +218,11 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     axis.text.y = element_text(size = 14),
     axis.ticks = element_line(color = "black", linewidth = 0.3),
     axis.ticks.length = unit(0.2, "cm"),
-    plot.margin = margin(5.5, 20, 5.5, 20, "pt")
+    plot.margin = margin(5.5, 30, 5.5, 30, "pt")  # More margin
   )
 
 volcano_by_ancestry
+
 # Print summary statistics
 n_total_sig <- sum(results_df$adj.P.Val < 0.05)
 n_afr_sig <- sum(results_df$adj.P.Val < 0.05 & results_df$Ancestry == "Higher in AFR")
@@ -175,13 +232,9 @@ cat("Total significant CpGs:", n_total_sig, "\n")
 cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
 
-# Save plot
+# Save plot with larger dimensions to accommodate labels
 ggsave("20251124_347_volcano_by_ancestry.png", 
-       plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
+       plot = volcano_by_ancestry, width = 12, height = 7, dpi = 300)
 
 # Save results
-## add CpG as colname
-# results_df <- results_df %>%
-#   tibble::rownames_to_column(var = "CpG")
-
-write.csv(results_df, "20251124_347_DiffMethylAnalysis_results.csv", row.names = TRUE)
+write.csv(results_df, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251124_Horvath_DiffMethylAnalysis_results.csv", row.names = TRUE)
