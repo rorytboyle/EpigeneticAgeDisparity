@@ -204,7 +204,7 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     x = expression(paste(Delta, "β(%)")),
     y = expression(-log[10](FDR)),
     color = "Methylation Level",
-    size = "Clock\nWeight (absolute)"
+    size = "Clock Weight (absolute)"
   ) +
   theme_minimal(base_size = 20) +
   theme(
@@ -233,8 +233,8 @@ cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
 
 # Save plot with larger dimensions to accommodate labels
-ggsave("20251124_Horvath_volcano_by_ancestry.png", 
-       plot = volcano_by_ancestry, width = 12, height = 7, dpi = 300)
+ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251124_Horvath_volcano_by_ancestry.png", 
+       plot = volcano_by_ancestry, width = 11.4, height = 7, dpi = 300) # 11.4 width allows for neater printing of FDR = 0.05
 
 # Save results
 ## add CpG as colname
