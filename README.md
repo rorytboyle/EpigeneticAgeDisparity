@@ -1,6 +1,7 @@
 # Differential methylation analysis workflow
 1) Impute betas from 450k array: mliftover_impute_betas.R
-2) Run differential methylation analysis by genetic ancestry: DML_ancestry_test_sized_dot.R
+2) **to be updated & renamed** Run differential methylation analysis of DunedinPACE by genetic ancestry: DML_ancestry_test_sized_dot.R
+3) **to be updated** Run differential methylation analysis of Horvath clock by genetic ancestry: DML_Horvath.R
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
