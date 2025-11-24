@@ -233,7 +233,7 @@ cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
 
 # Save plot with larger dimensions to accommodate labels
-ggsave("20251124_347_volcano_by_ancestry.png", 
+ggsave("20251124_Horvath_volcano_by_ancestry.png", 
        plot = volcano_by_ancestry, width = 12, height = 7, dpi = 300)
 
 # Save results
