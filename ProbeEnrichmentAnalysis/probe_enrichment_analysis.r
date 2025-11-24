@@ -459,11 +459,7 @@ metagene_res <- testEnrichment(
 metagene_db <- getDBs("EPIC.metagene")
 metagene_actual_labels <- sapply(metagene_db, function(x) attr(x, "label"))
 
-# Check if names match
-print(head(names(metagene_actual_labels)))
-print(head(metagene_res$dbname))
-
-# Add to metagene_df with explicit matching
+# Add labels to metagene_df with explicit matching
 metagene_df <- metagene_res %>%
   as.data.frame() %>%
   arrange(FDR) %>%
