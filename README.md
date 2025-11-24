@@ -1,7 +1,6 @@
 # Cell type deconvolution analysis workflow
 - *requires imputed betas from differential methylation analysis*
 1) Get cell type proportions: cell_type_deconvolution_EpiDISH.R
-2) Compare cell type proportions: compare_cell_type_proportions.R
  
 # Differential methylation analysis workflow
 - *steps 4) and 5) require cell type proportions from cell_type_deconvolution_EpiDISH.R*
@@ -16,7 +15,7 @@
 1) Run gene enrichment analysis of differentially methylated cpgs using KnowYourCG and query enriched genes in GWAS Catalog: gene_enrichment_analysis_with_GWASCatalog.R
 2) Run pathway analysis of genes enriched for differentially methylated cpgs: pathway_analysis.R
    - *requires genes from gene enrichment analysis*
-4) **to be added** Run probe enrichment analyses of differentially methylated probes: probe_enrichment_analysis_WORKING.R
+3) **to be added** Run probe enrichment analyses of differentially methylated probes: probe_enrichment_analysis_WORKING.R
    - NEED TO CLEAN UP THIS SCRIPT (REMOVE GENE ENRICHMENT & PATHWAY ANALYSIS)
    
 
