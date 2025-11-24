@@ -111,10 +111,12 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     segment.color = 'black',
     nudge_x = case_when(
       rownames(results_sig) == "cg17274064" ~ 3,
+      rownames(results_sig) == "cg18139769" ~ 5,
+      # rownames(results_sig) == "cg12946225" ~ -0.5,
       results_sig$delta_beta > 0 ~ 3,
       TRUE ~ -4
     ),
-    nudge_y = ifelse(rownames(results_sig) == "cg17274064", 0, 0.5)
+    nudge_y = ifelse(rownames(results_sig) == "cg17274064" | rownames(results_sig) == "cg18139769", 0, 0.5)
   ) +
   scale_color_manual(values = ancestry_colors) +
   guides(
@@ -146,7 +148,7 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     x = expression(paste(Delta, "β(%)")),
     y = expression(-log[10](FDR)),
     color = "Methylation Level",
-    size = "DunedinPACE\nWeight (absolute)"
+    size = "Clock\nWeight (absolute)"
   ) +
   theme_minimal(base_size = 20) +
   theme(
