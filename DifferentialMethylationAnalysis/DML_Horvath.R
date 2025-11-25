@@ -26,7 +26,6 @@ horvath_weights <- get_coefHorvath() %>%
   # drop the intercept row
   filter(CpG != "(Intercept)")
 
-
 # Load CpG sites of interest and filter data
 cpg_file_path <- "/Users/rorytb/Library/CloudStorage/Box-Box/PMBB for Rory/DATA/20251124_cpg_Horvath_intersect_MSA.rds"
 cpg_sites <- readRDS(cpg_file_path)
@@ -180,17 +179,17 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     size = guide_legend(override.aes = list(color = "black", alpha = 1))
   ) +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "grey") +
-  annotation_custom(
-    grob = grid::textGrob(
-      label = "FDR = 0.05", 
-      x = unit(-0.19, "npc"),
-      y = unit(0.03, "npc"),
-      just = "left",
-      gp = gpar(fontsize = 14)
-    ),
-    xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf
-  ) +
   coord_cartesian(clip = "off") +
+  annotate(
+    "text",
+    x = -Inf,
+    y = -log10(0.05),
+    label = "FDR = 0.05",
+    hjust = 1.05,  # Right-align and push left of the axis
+    vjust = 0.5,   # Center vertically on the line
+    size = 14 / .pt,  # Match your fontsize
+    color = "black"
+  ) +
   geom_vline(xintercept = c(-5, 5), linetype = "dashed", color = "grey") +
   scale_x_continuous(
     breaks = seq(-max_delta, max_delta, by = 5),
