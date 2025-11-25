@@ -5,8 +5,7 @@
 # Updated: 24/11/2025 to change name (from DML_ancestry_test_sized_dot.R) and to specify where DunedinPACE weights are sourced from
 
 # Load required libraries
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
 library(limma)
 library(ggrepel)
 library(grid)
