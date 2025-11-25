@@ -1,28 +1,27 @@
 # This script runs a differential methylation analysis by genetic ancestry group adjusted by cell type proportion across DunedinPACE CpGs and creates a volcano plot of the results
 # Author: Hao Xu & Rory Boyle rorytboyle@gmail.com
-# Date: 24/11/2025
+# Date: 25/11/2025
 
 # Load required libraries
-library(dplyr)
-library(ggplot2)
+library(tidyverse)
 library(limma)
 library(ggrepel)
 library(grid)
 library(DunedinPACE)
 
-cell_prop <- readRDS("/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/20250916_BloodFrac_m.rds")
+cell_prop <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/20250916_BloodFrac_m.rds")
 
 dunedinPACE_weights <- mPACE_Models$model_weights
 
 # Load CpG sites of interest and filter data
-cpg_file_path <- "/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/20250529_cpg_DunedinPACE_intersect_MSA.rds"
+cpg_file_path <- "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/20250529_cpg_DunedinPACE_intersect_MSA.rds"
 cpg_sites <- readRDS(cpg_file_path)
 
-data <- readRDS("/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/PMBBID_IDAT_covariate_class_05082025.rds")
+data <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/PMBBID_IDAT_covariate_class_05082025.rds")
 data <- data %>% filter(Class %in% c("EUR", "AFR"))
 
 # Load beta values and filter to match metadata
-betasHM450_imputed <- readRDS("/home/xuh6/20240920_Hao/projects/PMBB_data_analysis/20241220_betasHM450_imputed.rds")
+betasHM450_imputed <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/data/20241220_betasHM450_imputed.rds")
 betasHM450_imputed <- betasHM450_imputed[, data$IDAT_file_name]
 
 # Make sure cell_prop match the order in beta matrix and metadata
@@ -82,7 +81,32 @@ results_df <- as.data.frame(results)
 
 # Filter for significant points to label
 results_sig <- results_df %>%
-  filter(adj.P.Val < 0.05, abs(delta_beta * 100) > 5) 
+  filter(adj.P.Val < 0.05, abs(delta_beta * 100) > 5)
+
+# Identify the crowded cluster for manual positioning
+crowded_cpgs <- c("cg16739178", "cg24403644", "cg07471256", "cg04624885")
+
+results_sig_crowded <- results_sig %>%
+  filter(rownames(.) %in% crowded_cpgs) %>%
+  mutate(
+    manual_nudge_x = case_when(
+      rownames(.) == "cg16739178" ~ 8,
+      rownames(.) == "cg24403644" ~ 7,
+      rownames(.) == "cg07471256" ~ 9,
+      rownames(.) == "cg04624885" ~ 10,
+      TRUE ~ 5
+    ),
+    manual_nudge_y = case_when(
+      rownames(.) == "cg16739178" ~ 2,
+      rownames(.) == "cg24403644" ~ 0,
+      rownames(.) == "cg07471256" ~ -1,
+      rownames(.) == "cg04624885" ~ -2,
+      TRUE ~ 0
+    )
+  )
+
+results_sig_other <- results_sig %>%
+  filter(!rownames(.) %in% crowded_cpgs)
 
 # Calculate plot limits
 max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
@@ -91,7 +115,7 @@ max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
 max_weight <- max(results$abs_weight, na.rm = TRUE)
 legend_breaks <- c(0, 0.15, 0.3, 0.45, 0.6)
 
-# Create volcano plot
+# Create volcano plot with manual positioning
 volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, 
                                            y = -log10(adj.P.Val), 
                                            color = Ancestry, 
@@ -103,20 +127,33 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     labels = function(x) sprintf("%.2f", x),
     limits = c(0, NA)  # Ensure scale starts at 0
   ) +
+  # Labels for crowded cluster with manual positioning
   geom_text_repel(
-    data = results_sig,
-    aes(label = rownames(results_sig)),
-    size = 5,
-    max.overlaps = 20,
-    box.padding = 0.4,
+    data = results_sig_crowded,
+    aes(label = rownames(results_sig_crowded)),
+    size = 4,
+    box.padding = 0.5,
     point.padding = 0.5,
-    segment.color = 'black',
-    nudge_x = case_when(
-      rownames(results_sig) == "cg00151250" ~ 4,
-      results_sig$delta_beta > 0 ~ 3,
-      TRUE ~ -4
-    ),
-    nudge_y = ifelse(rownames(results_sig) == "cg00151250", 7, 0.5)
+    segment.color = 'grey30',
+    segment.size = 0.3,
+    min.segment.length = 0,
+    nudge_x = results_sig_crowded$manual_nudge_x,
+    nudge_y = results_sig_crowded$manual_nudge_y,
+    force = 0.5  # Lower force since we're manually positioning
+  ) +
+  # Labels for other points with automatic positioning
+  geom_text_repel(
+    data = results_sig_other,
+    aes(label = rownames(results_sig_other)),
+    size = 4,
+    max.overlaps = 50,
+    box.padding = 1.0,
+    point.padding = 0.8,
+    segment.color = 'grey30',
+    segment.size = 0.3,
+    min.segment.length = 0,
+    force = 2,
+    force_pull = 0.1
   ) +
   scale_color_manual(values = ancestry_colors) +
   guides(
@@ -138,17 +175,17 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
   geom_vline(xintercept = c(-5, 5), linetype = "dashed", color = "grey") +
   scale_x_continuous(
     breaks = seq(-max_delta, max_delta, by = 5),
-    limits = c(-max_delta-5, max_delta+5),
-    expand = expansion(mult = 0.02)
+    limits = c(-max_delta-8, max_delta+8),  # More space for labels
+    expand = expansion(mult = 0.05)
   ) +
   scale_y_continuous(
-    expand = expansion(mult = c(0, 0.05))
+    expand = expansion(mult = c(0.02, 0.15))  # More space at top
   ) +
   labs(
     x = expression(paste(Delta, "β(%)")),
     y = expression(-log[10](FDR)),
     color = "Methylation Level",
-    size = "DunedinPACE\nWeight (absolute)"
+    size = "Clock Weight (absolute)"
   ) +
   theme_minimal(base_size = 20) +
   theme(
@@ -162,10 +199,11 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     axis.text.y = element_text(size = 14),
     axis.ticks = element_line(color = "black", linewidth = 0.3),
     axis.ticks.length = unit(0.2, "cm"),
-    plot.margin = margin(5.5, 20, 5.5, 20, "pt")
+    plot.margin = margin(5.5, 30, 5.5, 30, "pt")  # More margin
   )
 
 volcano_by_ancestry
+
 # Print summary statistics
 n_total_sig <- sum(results_df$adj.P.Val < 0.05)
 n_afr_sig <- sum(results_df$adj.P.Val < 0.05 & results_df$Ancestry == "Higher in AFR")
@@ -175,13 +213,12 @@ cat("Total significant CpGs:", n_total_sig, "\n")
 cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
 
-# Save plot
-ggsave("20251124_171_volcano_by_ancestry_adjusted_cell_type.png", 
-       plot = volcano_by_ancestry, width = 10, height = 6, dpi = 300)
+# Save plot with larger dimensions
+ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_DunedinPACE_cell_type_prop_adjusted_volcano_by_ancestry.png", 
+       plot = volcano_by_ancestry, width = 11.4, height = 7, dpi = 300) # 11.4 width allows for neater printing of FDR = 0.05
 
 # Save results
-## add CpG as colname
 results_df <- results_df %>%
   tibble::rownames_to_column(var = "CpG")
 
-write.csv(results_df, "20251124_171_DiffMethylAnalysis_results_adjusted_cell_type.csv", row.names = TRUE)
+write.csv(results_df, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_DunedinPACE_DiffMethylAnalysis_cell_type_prop_adjusted_results.csv", row.names = TRUE)
