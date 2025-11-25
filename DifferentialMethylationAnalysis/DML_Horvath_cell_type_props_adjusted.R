@@ -1,3 +1,7 @@
+# This script runs a differential methylation analysis by genetic ancestry group adjusted by cell type proportion across Horvath clock CpGs and creates a volcano plot of the results
+# Author: Hao Xu & Rory Boyle rorytboyle@gmail.com
+# Date: 24/11/2025
+
 # Load required libraries
 library(readxl)
 library(sesame)
