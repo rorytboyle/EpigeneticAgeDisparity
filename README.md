@@ -7,8 +7,8 @@
 1) Impute betas from 450k array: **mliftover_impute_betas.R**
 2) Run differential methylation analysis of DunedinPACE by genetic ancestry: **DML_DunedinPACE.R**
 3) Run differential methylation analysis of Horvath clock by genetic ancestry: **DML_Horvath.R**
-4) **to be added** Run differential methylation analysis of DunedinPACE by genetic ancestry, covarying for cell type proportions: **DML_DunedinPACE_cell_type_props_adjusted.R**
-5) **to be added** Run differential methylation analysis of Horvath clock by genetic ancestry, covarying for cell type proportions: **DML_Horvath_cell_type_props_adjusted.R**
+4) Run differential methylation analysis of DunedinPACE by genetic ancestry, covarying for cell type proportions: **DML_DunedinPACE_cell_type_props_adjusted.R**
+5) Run differential methylation analysis of Horvath clock by genetic ancestry, covarying for cell type proportions: **DML_Horvath_cell_type_props_adjusted.R**
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
