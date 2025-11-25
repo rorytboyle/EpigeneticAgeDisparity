@@ -9,6 +9,7 @@
 3) Run differential methylation analysis of Horvath clock by genetic ancestry: **DML_Horvath.R**
 4) Run differential methylation analysis of DunedinPACE by genetic ancestry, covarying for cell type proportions: **DML_DunedinPACE_cell_type_props_adjusted.R**
 5) Run differential methylation analysis of Horvath clock by genetic ancestry, covarying for cell type proportions: **DML_Horvath_cell_type_props_adjusted.R**
+6) Analyse impact of cell type adjustment on differential methylation analyses: **DML_analyse_impact_of_cell_type_adjustment.R**
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
