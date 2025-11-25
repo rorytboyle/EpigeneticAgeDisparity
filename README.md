@@ -1,6 +1,6 @@
 # Cell type deconvolution analysis workflow
 - *requires imputed betas from differential methylation analysis*
-1) Get cell type proportions: cell_type_deconvolution_EpiDISH.R
+1) Runn cell-type deconvolution on DNAm data using EpiDISH to get cell type proportions: cell_type_deconvolution_EpiDISH.R
  
 # Differential methylation analysis workflow
 - *steps 4) and 5) require cell type proportions from cell_type_deconvolution_EpiDISH.R*
