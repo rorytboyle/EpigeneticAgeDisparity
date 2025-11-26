@@ -63,7 +63,7 @@ results <- topTable(fit, coef = 2, number = Inf, adjust.method = "fdr")
 
 # Add delta beta (AFR - EUR)
 results$delta_beta <- rowMeans(betas[, group == "AFR"], na.rm = TRUE) -
-                      rowMeans(betas[, group == "EUR"], na.rm = TRUE)
+  rowMeans(betas[, group == "EUR"], na.rm = TRUE)
 
 # Add Horvath weights to results
 # Match weights by CpG names
@@ -96,46 +96,6 @@ ancestry_colors <- c(
 # Convert to data.frame
 results_df <- as.data.frame(results)
 
-# Filter for significant points to label
-results_sig <- results_df %>%
-  filter(adj.P.Val < 0.05, abs(delta_beta * 100) > 5)
-
-# Identify the crowded cluster for manual positioning
-crowded_cpgs <- c("cg04431054", "cg13129046", "cg10865119", "cg26614073", 
-                  "cg19692710", "cg09133026", "cg27169020", "cg14658362", "cg25771195")
-
-results_sig_crowded <- results_sig %>%
-  filter(rownames(.) %in% crowded_cpgs) %>%
-  mutate(
-    manual_nudge_x = case_when(
-      rownames(.) == "cg04431054" ~ 8,
-      rownames(.) == "cg13129046" ~ 7,
-      rownames(.) == "cg10865119" ~ 9,
-      rownames(.) == "cg26614073" ~ 10,
-      rownames(.) == "cg19692710" ~ 8,
-      rownames(.) == "cg09133026" ~ -15,  # Move further left into white space
-      rownames(.) == "cg27169020" ~ 6,
-      rownames(.) == "cg14658362" ~ 7,
-      rownames(.) == "cg25771195" ~ -15,  # Move further left into white space
-      TRUE ~ 5
-    ),
-    manual_nudge_y = case_when(
-      rownames(.) == "cg04431054" ~ 2,
-      rownames(.) == "cg13129046" ~ 1,
-      rownames(.) == "cg10865119" ~ 0,
-      rownames(.) == "cg26614073" ~ 3,
-      rownames(.) == "cg19692710" ~ -1,
-      rownames(.) == "cg09133026" ~ 0,   # Adjust vertical position
-      rownames(.) == "cg27169020" ~ -2,
-      rownames(.) == "cg14658362" ~ -2,
-      rownames(.) == "cg25771195" ~ -0.5,  # Adjust vertical position
-      TRUE ~ 0
-    )
-  )
-
-results_sig_other <- results_sig %>%
-  filter(!rownames(.) %in% crowded_cpgs)
-
 # Calculate plot limits
 max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
 
@@ -143,7 +103,7 @@ max_delta <- ceiling(max(abs(results$delta_beta * 100), na.rm = TRUE) / 5) * 5
 max_weight <- max(results$abs_weight, na.rm = TRUE)
 legend_breaks <- c(0, 0.15, 0.3, 0.45, 0.6)
 
-# Create volcano plot with manual positioning
+# Create volcano plot without annotations
 volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100, 
                                            y = -log10(adj.P.Val), 
                                            color = Ancestry, 
@@ -154,34 +114,6 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     breaks = legend_breaks,
     labels = function(x) sprintf("%.2f", x),
     limits = c(0, NA)  # Ensure scale starts at 0
-  ) +
-  # Labels for crowded cluster with manual positioning
-  geom_text_repel(
-    data = results_sig_crowded,
-    aes(label = rownames(results_sig_crowded)),
-    size = 4,
-    box.padding = 0.5,
-    point.padding = 0.5,
-    segment.color = 'grey30',
-    segment.size = 0.3,
-    min.segment.length = 0,
-    nudge_x = results_sig_crowded$manual_nudge_x,
-    nudge_y = results_sig_crowded$manual_nudge_y,
-    force = 0.5  # Lower force since we're manually positioning
-  ) +
-  # Labels for other points with automatic positioning
-  geom_text_repel(
-    data = results_sig_other,
-    aes(label = rownames(results_sig_other)),
-    size = 4,
-    max.overlaps = 50,
-    box.padding = 1.0,
-    point.padding = 0.8,
-    segment.color = 'grey30',
-    segment.size = 0.3,
-    min.segment.length = 0,
-    force = 2,
-    force_pull = 0.1
   ) +
   scale_color_manual(values = ancestry_colors) +
   guides(
@@ -200,14 +132,13 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     size = 14 / .pt,  # Match your fontsize
     color = "black"
   ) +
-  geom_vline(xintercept = c(-5, 5), linetype = "dashed", color = "grey") +
   scale_x_continuous(
     breaks = seq(-max_delta, max_delta, by = 5),
-    limits = c(-max_delta-8, max_delta+8),  # More space for labels
-    expand = expansion(mult = 0.05)
+    limits = c(-max_delta-2, max_delta+2),  # Reduced from 8 to 2
+    expand = expansion(mult = 0.02)  # Reduced from 0.05
   ) +
   scale_y_continuous(
-    expand = expansion(mult = c(0.02, 0.15))  # More space at top
+    expand = expansion(mult = c(0.02, 0.05))  # Reduced top expansion
   ) +
   labs(
     x = expression(paste(Delta, "β(%)")),
@@ -227,7 +158,7 @@ volcano_by_ancestry <- ggplot(results, aes(x = delta_beta * 100,
     axis.text.y = element_text(size = 14),
     axis.ticks = element_line(color = "black", linewidth = 0.3),
     axis.ticks.length = unit(0.2, "cm"),
-    plot.margin = margin(5.5, 30, 5.5, 30, "pt")  # More margin
+    plot.margin = margin(5.5, 20, 5.5, 20, "pt")  # Reduced from 30 to 20
   )
 
 volcano_by_ancestry
@@ -241,9 +172,9 @@ cat("Total significant CpGs:", n_total_sig, "\n")
 cat("Significant CpGs higher in AFR:", n_afr_sig, "\n")
 cat("Significant CpGs higher in EUR:", n_eur_sig, "\n")
 
-# Save plot with larger dimensions
+# Save plot with narrower width
 ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_Horvath_cell_type_prop_adjusted_volcano_by_ancestry.png", 
-       plot = volcano_by_ancestry, width = 11.4, height = 7, dpi = 300)
+       plot = volcano_by_ancestry, width = 8, height = 7, dpi = 300)  # Reduced from 11.4 to 8
 
 # Save results
 results_df <- results_df %>%
