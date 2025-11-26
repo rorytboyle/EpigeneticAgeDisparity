@@ -1,6 +1,6 @@
 # This script summarizes the results of differential methylation analyses with and without adjusting for cell type proportions
 # Author: Rory Boyle rorytboyle@gmail.com
-# Date: 25/11/2025
+# Date: 26/11/2025
 
 # Load required libraries
 library(tidyverse)
@@ -104,17 +104,85 @@ compare_adjusted_unadjusted <- function(unadj_file, adj_file, clock_name, weight
       )
     )
   
-  # Filter for CpGs that were sig and beyond 5% delta beta in unadjusted differential methylation analyses
-  comparison_labeled <- comparison %>%
-    filter(
-      adj.P.Val_unadj < 0.05 &
-        abs(delta_beta_unadj * 100) > 5
-    )
+  # Get all CpGs that are sig in both (same direction) for AFR
+  blue_dots_afr <- comparison %>%
+    filter(combined_status == "Sig in Both (Same Direction)",
+           Ancestry_unadj == "Higher in AFR")
   
-  cat("Number of CpGs to be labeled:", nrow(comparison_labeled), "\n")
-  cat("Labeled CpGs:\n")
+  n_blue_afr <- nrow(blue_dots_afr)
+  
+  cat("Number of CpGs significantly hypermethylated in AFR in both analyses:", n_blue_afr, "\n")
+  
+  # Save table of all blue dots for supplementary material
+  blue_dots_table <- blue_dots_afr %>%
+    select(CpG, delta_beta_unadj, adj.P.Val_unadj, 
+           delta_beta_adj, adj.P.Val_adj, delta_delta_beta) %>%
+    arrange(desc(abs(delta_beta_unadj)))
+  
+  write.csv(
+    blue_dots_table,
+    paste0("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_", 
+           clock_name, "_sig_in_both_AFR_hypermethylated_CpGs.csv"),
+    row.names = FALSE
+  )
+  
+  # Label top 10 by largest original delta_beta_unadj
+  comparison_labeled <- blue_dots_afr %>%
+    arrange(desc(abs(delta_beta_unadj))) %>%
+    slice_head(n = 10)
+  
+  cat("Top 10 CpGs by largest delta_beta_unadj:\n")
   print(comparison_labeled %>% select(CpG, delta_beta_unadj, adj.P.Val_unadj, delta_beta_adj, adj.P.Val_adj, delta_delta_beta))
   cat("\n")
+  
+  # Add manual nudging based on clock type and position
+  if (clock_name == "DunedinPACE") {
+    comparison_labeled <- comparison_labeled %>%
+      mutate(
+        manual_nudge_x = case_when(
+          abs(delta_delta_beta) < 2 ~ 12,  # Labels near y=0, push far right
+          delta_beta_unadj * 100 < -2 ~ -8,  # Left side labels
+          TRUE ~ 10  # Right side labels
+        ),
+        manual_nudge_y = case_when(
+          abs(delta_delta_beta) < 2 & delta_delta_beta > 0 ~ 3,  # Above y=0
+          abs(delta_delta_beta) < 2 & delta_delta_beta < 0 ~ -3,  # Below y=0
+          delta_delta_beta > 0 ~ 2,
+          TRUE ~ -2
+        )
+      )
+  } else if (clock_name == "Horvath") {
+    comparison_labeled <- comparison_labeled %>%
+      mutate(
+        manual_nudge_x = case_when(
+          delta_beta_unadj * 100 > 5 ~ 8,  # Far right labels
+          delta_beta_unadj * 100 < 0 ~ -5,  # Left side labels
+          TRUE ~ 6
+        ),
+        manual_nudge_y = case_when(
+          abs(delta_delta_beta) < 1 ~ ifelse(delta_delta_beta > 0, 4, -4),
+          delta_delta_beta < -3 ~ -3,
+          TRUE ~ 2
+        )
+      )
+  } else {
+    # Default nudging if clock type unknown
+    comparison_labeled <- comparison_labeled %>%
+      mutate(
+        manual_nudge_x = 8,
+        manual_nudge_y = 2
+      )
+  }
+  
+  # Create caption
+  plot_caption <- sprintf(
+    "%d CpGs were significantly hypermethylated with and without adjusting for cell type proportions. The 10 CpGs with the largest Δβ values, without adjusting for cell type proportions, are labelled here. See supplementary table for complete list.",
+    n_blue_afr
+  )
+  
+  # Calculate plot limits for better spacing
+  x_range <- range(comparison$delta_beta_unadj * 100, na.rm = TRUE)
+  y_range <- range(comparison$delta_delta_beta, na.rm = TRUE)
   
   # Create plot with both color and shape
   delta_beta_change_plot <- ggplot(comparison, aes(x = delta_beta_unadj * 100, 
@@ -126,12 +194,19 @@ compare_adjusted_unadjusted <- function(unadj_file, adj_file, clock_name, weight
     geom_text_repel(
       data = comparison_labeled,
       aes(label = CpG),
-      size = 4,
-      max.overlaps = 30,
-      box.padding = 0.5,
-      point.padding = 0.3,
-      segment.color = 'grey50',
-      min.segment.length = 0
+      size = 3.5,
+      max.overlaps = Inf,
+      box.padding = 0.8,
+      point.padding = 0.8,
+      segment.color = 'grey40',
+      segment.size = 0.3,
+      min.segment.length = 0,
+      force = 10,
+      force_pull = 0.1,
+      nudge_x = comparison_labeled$manual_nudge_x,
+      nudge_y = comparison_labeled$manual_nudge_y,
+      direction = "both",
+      seed = 42
     ) +
     scale_color_manual(
       values = c(
@@ -149,6 +224,12 @@ compare_adjusted_unadjusted <- function(unadj_file, adj_file, clock_name, weight
         "Not Significant" = 15  # Filled square
       )
     ) +
+    scale_x_continuous(
+      expand = expansion(mult = c(0.15, 0.2))  # More space on right for labels
+    ) +
+    scale_y_continuous(
+      expand = expansion(mult = c(0.15, 0.2))  # More space top/bottom
+    ) +
     guides(
       shape = guide_legend(override.aes = list(size = 4, alpha = 1), order = 1),
       color = guide_legend(override.aes = list(size = 4, alpha = 1), order = 2)
@@ -158,20 +239,24 @@ compare_adjusted_unadjusted <- function(unadj_file, adj_file, clock_name, weight
       y = expression(paste("Change in ", Delta, "β(%) after cell type adjustment")),
       shape = "Direction without adjusting\nfor cell type proportions",
       color = "Status after adjustment\nfor cell type proportions",
-      title = paste0("Δβ Change of ", clock_name, " CpGs by genetic ancestry after cell type adjustment")
+      title = paste0("Δβ Change of ", clock_name, " CpGs by genetic ancestry after cell type adjustment"),
+      caption = plot_caption
     ) +
     theme_minimal(base_size = 12) +
     theme(
       legend.position = "right",
       panel.grid.minor = element_blank(),
       plot.subtitle = element_text(size = 10, color = "grey40"),
+      plot.caption = element_text(size = 9, hjust = 0, color = "grey30", 
+                                  margin = margin(t = 10), lineheight = 1.2),
       legend.box = "vertical"
     )
   
   return(list(
     comparison = comparison,
     plot = delta_beta_change_plot,
-    clock_name = clock_name
+    clock_name = clock_name,
+    n_blue_afr = n_blue_afr
   ))
 }
 
@@ -201,41 +286,53 @@ print(horvath_results$plot)
 # Save plots ####
 # DunedinPACE
 ggsave(
-  filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_DunedinPACE_DiffMethylAnalysis_cell_type_adjustment_delta_beta_change_plot.png",
+  filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251126_DunedinPACE_DiffMethylAnalysis_cell_type_adjustment_delta_beta_change_plot.png",
   plot = dunedinpace_results$plot,
   width = 11,
-  height = 7,
+  height = 8,  # Increased height for caption
   dpi = 300
 )
 
 # Horvath
 ggsave(
-  filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_Horvath_DiffMethylAnalysis_cell_type_adjustment_delta_beta_change_plot.png",
+  filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251126_Horvath_DiffMethylAnalysis_cell_type_adjustment_delta_beta_change_plot.png",
   plot = horvath_results$plot,
   width = 11,
-  height = 7,
+  height = 8,  # Increased height for caption
   dpi = 300
 )
 
 # Combined side-by-side plot with single legend
+# Create combined caption that spans width
+combined_caption <- sprintf(
+  "For each clock, CpGs significantly hypermethylated in AFR with and without cell type adjustment are shown. The 10 CpGs with the largest Δβ values (without adjustment) are labelled. See supplementary tables for complete lists."
+)
+
 combined_plot <- (dunedinpace_results$plot + 
-                    theme(legend.position = "none") + 
+                    theme(legend.position = "none", 
+                          plot.caption = element_blank()) + 
                     labs(title = "DunedinPACE")) + 
   (horvath_results$plot + 
+     theme(plot.caption = element_blank()) +
      labs(title = "Horvath")) +
   plot_layout(ncol = 2) +
   plot_annotation(
     title = "Δβ Change of Clock CpGs by Genetic Ancestry After Cell Type Adjustment",
-    theme = theme(plot.title = element_text(size = 14, hjust = 0.5, face = "bold"))
+    caption = combined_caption,
+    theme = theme(
+      plot.title = element_text(size = 14, hjust = 0.5, face = "bold"),
+      plot.caption = element_text(size = 9, hjust = 0, color = "grey30", 
+                                  margin = margin(t = 10), lineheight = 1.2)
+    )
   )
 
 combined_plot
 
 ggsave(
-  filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_Combined_DiffMethylAnalysis_cell_type_adjustment_delta_beta_change_plot.png",
+  filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251126_Combined_DiffMethylAnalysis_cell_type_adjustment_delta_beta_change_plot.png",
   plot = combined_plot,
   width = 18,
-  height = 7,
+  height = 8,  # Increased height for caption
   dpi = 300
 )
 
@@ -244,13 +341,13 @@ ggsave(
 # DunedinPACE
 write.csv(
   dunedinpace_results$comparison,
-  "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_DunedinPACE_adjusted_vs_unadjusted_comparison.csv",
+  "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251126_DunedinPACE_adjusted_vs_unadjusted_comparison.csv",
   row.names = FALSE
 )
 
 # Horvath
 write.csv(
   horvath_results$comparison,
-  "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251125_Horvath_adjusted_vs_unadjusted_comparison.csv",
+  "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251126_Horvath_adjusted_vs_unadjusted_comparison.csv",
   row.names = FALSE
 )
