@@ -133,8 +133,5 @@ positions <- lookup_multiple_cpgs(dmp_cpgs$CpG, manifest)
 query_cpgs <- positions$Manifest_ID
 
 # Save
-write.csv(
-  query_cpgs,
-  "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20250201_hypermethylated_DunedinPACE_CpGs_African_Ancestry.csv",
-  row.names = FALSE
-)
+saveRDS(query_cpgs, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20250201_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
+
