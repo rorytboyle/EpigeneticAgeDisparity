@@ -11,14 +11,11 @@
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
-1) **to be updated** Run gene enrichment analysis of differentially methylated cpgs using KnowYourCG and query enriched genes in GWAS Catalog: **gene_enrichment_analysis_with_GWASCatalog_DunedinPACE.R** and **gene_enrichment_analysis_with_GWASCatalog_Horvath.R**
-   - Use dev version of KnowYourCG and MSA platform
+1) Run gene enrichment analysis of differentially methylated cpgs using KnowYourCG and query enriched genes in GWAS Catalog: **gene_enrichment_analysis_GWASCatalog_query_DunedinPACE.R** and **gene_enrichment_analysis_GWASCatalog_query_Horvath.R**
 2) **to be updated** Run pathway analysis of genes enriched for differentially methylated cpgs: **pathway_analysis_DunedinPACE.R** and **pathway_analysis_Horvath.R**
    - *requires genes from gene enrichment analysis*
    - Use dev version of KnowYourCG and MSA platform
-3) **to be updated** Run probe enrichment analyses of differentially methylated probes: **probe_enrichment_analysis_DunedinPACE.R** and **probe_enrichment_analysis_Horvath.R**
-   - Use dev version of KnowYourCG and MSA platform
-   - Add TI sig enrichment
+3) Run probe enrichment analyses of differentially methylated probes: **probe_enrichment_analysis_DunedinPACE.R** and **probe_enrichment_analysis_Horvath.R**
 
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: **get_windows.R**
