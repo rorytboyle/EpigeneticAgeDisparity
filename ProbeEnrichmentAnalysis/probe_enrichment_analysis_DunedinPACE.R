@@ -723,11 +723,20 @@ write.csv(cgi_annotated,
 proximity_res <- testProbeProximity(query_cpgs, platform="MSA")
 print(proximity_res)
 
+# Handle inconsistent column naming (P.val vs p.val - changes based on significance!)
+p_value <- if ("P.val" %in% names(proximity_res$Stats)) {
+  proximity_res$Stats$P.val
+} else if ("p.val" %in% names(proximity_res$Stats)) {
+  proximity_res$Stats$p.val
+} else {
+  NA
+}
+
 # Check if clustering is significant
 # When significant: proximity_res$Clusters is a data frame
 # When not significant: proximity_res$Clusters is NA
-has_sig_cluster <- !is.na(proximity_res$Stats$p.val) && 
-  proximity_res$Stats$p.val < 0.05 &&
+has_sig_cluster <- !is.na(p_value) && 
+  p_value < 0.05 &&
   is.data.frame(proximity_res$Clusters)
 
 # Step 1: Get annotations for CpGs
@@ -776,7 +785,7 @@ if (has_sig_cluster) {
     mutate(in_cluster = FALSE)
   
   cluster_cpgs <- data.frame()  # Empty dataframe
-  cat("No significant clustering detected (P =", proximity_res$Stats$p.val, ")\n")
+  cat("No significant clustering detected (P =", p_value, ")\n")
 }
 
 # Step 2: Plot CpG distribution across chromosomes
@@ -803,7 +812,7 @@ cpg_genomic_proximity <- ggplot(cpg_summary, aes(x = seqnames, y = n_cpgs, fill 
   scale_x_discrete(expand = expansion(add = c(3, 3))) +  # Add padding on both sides
   labs(x = "Chromosome", y = "Number of CpGs",
        title = "Distribution of Hypermethylated CpGs Across Chromosomes",
-       subtitle = paste0("Spatial clustering P = ", format(proximity_res$Stats$p.val, digits = 3))) +
+       subtitle = paste0("Spatial clustering P = ", format(p_value, digits = 3))) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -940,7 +949,7 @@ ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethyl
 # Save the test statistics
 proximity_stats <- data.frame(
   test = "Genomic Proximity",
-  p_value = proximity_res$Stats$p.val,
+  p_value = p_value,
   n_cpgs = length(query_cpgs),
   significant_clustering = has_sig_cluster
 )
@@ -1017,16 +1026,39 @@ metagene_df <- metagene_res %>%
 # Display results
 print(metagene_df %>% select(region_label, estimate, overlap, p.value, FDR))
 
-# Visualize gene regions with actual labels
-p_metagene <- ggplot(metagene_df, aes(x = region_order, y = -log10(FDR))) +
+# Check if any regions have FDR < 0.05
+has_fdr_sig <- any(metagene_df$FDR < 0.05, na.rm = TRUE)
+
+# Determine which y-axis to use
+if (has_fdr_sig) {
+  # Use FDR if there are significant results
+  metagene_df <- metagene_df %>%
+    mutate(y_value = -log10(FDR))
+  
+  y_label <- expression(-Log[10](FDR))
+  hline_value <- -log10(0.05)
+  subtitle_text <- "Location relative to gene structure"
+  
+} else {
+  # Use p-value if no FDR significant results
+  metagene_df <- metagene_df %>%
+    mutate(y_value = -log10(p.value))
+  
+  y_label <- expression(-Log[10](italic(P)~value))
+  hline_value <- -log10(0.05)
+  subtitle_text <- "Location relative to gene structure (No significant enrichment after FDR correction)"
+}
+
+# Visualize gene regions with conditional y-axis
+p_metagene <- ggplot(metagene_df, aes(x = region_order, y = y_value)) +
   geom_col(fill = "gray60", color = "black", width = 0.7) +
   geom_text(aes(label = overlap), vjust = -0.5, size = 3) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  geom_hline(yintercept = hline_value, linetype = "dashed", color = "red") +
   labs(
     title = "Gene Region Enrichment",
-    subtitle = "Location relative to gene structure",
+    subtitle = subtitle_text,
     x = "Gene Region",
-    y = "-log10(FDR)"
+    y = y_label
   ) +
   theme_bw(base_size = 11) +
   theme(
