@@ -265,72 +265,87 @@ tfbs_sig <- tfbs_annotated %>%
     font_face = ifelse(FDR < 0.05, "bold", "plain")
   )
 
-# Left panel: P-values with N labels embedded in bars
-p_tfbs_left <- ggplot(tfbs_sig, aes(x = tf_order, y = log10_p)) +
-  geom_col(fill = "grey40", color = "black", width = 0.85, linewidth = 0.2) +
-  geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
-  geom_text(aes(label = n_label), 
-            hjust = 1.1,
-            size = 3,
-            color = "white",
-            fontface = "bold") +
-  scale_y_continuous(
-    expand = expansion(mult = c(0, 0.05)),
-    breaks = c(0, 2, 4, 6, 8, 10),
-    labels = c("1", expression(10^-2), expression(10^-4), expression(10^-6), 
-               expression(10^-8), expression(10^-10))
-  ) +
-  coord_flip() +
-  labs(
-    x = NULL,
-    y = expression(-Log[10](italic(P)~value))
-  ) +
-  theme_classic(base_size = 11) +
-  theme(
-    axis.text.y = element_text(size = 9, color = "black",
-                               face = tfbs_sig$font_face[match(levels(tfbs_sig$tf_order), 
-                                                               tfbs_sig$tf_label)]),
-    axis.text.x = element_text(size = 9, color = "black"),
-    axis.title.x = element_text(size = 10),
-    panel.grid.major.x = element_line(color = "grey85", linewidth = 0.3),
-    panel.grid.minor.x = element_blank(),
-    axis.line = element_line(color = "black", linewidth = 0.5),
-    plot.margin = margin(5, 1, 5, 5)
-  )
+# Check if there are any significant results
+if (nrow(tfbs_sig) > 0) {
+  
+  # Left panel: P-values with N labels embedded in bars
+  p_tfbs_left <- ggplot(tfbs_sig, aes(x = tf_order, y = log10_p)) +
+    geom_col(fill = "grey40", color = "black", width = 0.85, linewidth = 0.2) +
+    geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
+    geom_text(aes(label = n_label), 
+              hjust = 1.1,
+              size = 3,
+              color = "white",
+              fontface = "bold") +
+    scale_y_continuous(
+      expand = expansion(mult = c(0, 0.05)),
+      breaks = c(0, 2, 4, 6, 8, 10),
+      labels = c("1", expression(10^-2), expression(10^-4), expression(10^-6), 
+                 expression(10^-8), expression(10^-10))
+    ) +
+    coord_flip() +
+    labs(
+      x = NULL,
+      y = expression(-Log[10](italic(P)~value))
+    ) +
+    theme_classic(base_size = 11) +
+    theme(
+      axis.text.y = element_text(size = 9, color = "black",
+                                 face = tfbs_sig$font_face[match(levels(tfbs_sig$tf_order), 
+                                                                 tfbs_sig$tf_label)]),
+      axis.text.x = element_text(size = 9, color = "black"),
+      axis.title.x = element_text(size = 10),
+      panel.grid.major.x = element_line(color = "grey85", linewidth = 0.3),
+      panel.grid.minor.x = element_blank(),
+      axis.line = element_line(color = "black", linewidth = 0.5),
+      plot.margin = margin(5, 1, 5, 5)
+    )
+  
+  # Right panel: Log2(OR)
+  p_tfbs_right <- ggplot(tfbs_sig, aes(x = tf_order, y = log2_OR)) +
+    geom_col(fill = "grey40", color = "black", width = 0.85, linewidth = 0.2) +
+    scale_x_discrete(position = "top") +
+    coord_flip() +
+    labs(
+      x = NULL,
+      y = expression(Log[2](OR))
+    ) +
+    theme_classic(base_size = 11) +
+    theme(
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      axis.line.y = element_blank(),
+      axis.text.x = element_text(size = 9, color = "black"),
+      axis.title.x = element_text(size = 10),
+      panel.grid.major.x = element_line(color = "grey85", linewidth = 0.3),
+      panel.grid.minor.x = element_blank(),
+      axis.line.x = element_line(color = "black", linewidth = 0.5),
+      plot.margin = margin(5, 5, 5, 1)
+    )
+  
+  # Combine TFBS panels
+  combined_tfbs <- p_tfbs_left + plot_spacer() + p_tfbs_right + 
+    plot_layout(widths = c(1.3, 0.05, 1)) +
+    plot_annotation(
+      title = "Probe enrichment for transcription factor binding sites (top 25)"
+    )
+  
+  print(combined_tfbs)
+  
+  ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_transcription_factor_binding_site_enrichment.png", 
+         combined_tfbs, width = 10, height = 6, dpi = 300)
+  
+} else {
+  cat("No transcription factors with FDR < 0.05 and overlap > 1\n")
+  cat("Top transcription factors by p-value:\n")
+  print(tfbs_annotated %>% 
+          filter(overlap > 0) %>% 
+          arrange(p.value) %>% 
+          select(tf_name, overlap, estimate, p.value, FDR) %>%
+          head(10))
+}
 
-# Right panel: Log2(OR)
-p_tfbs_right <- ggplot(tfbs_sig, aes(x = tf_order, y = log2_OR)) +
-  geom_col(fill = "grey40", color = "black", width = 0.85, linewidth = 0.2) +
-  scale_x_discrete(position = "top") +
-  coord_flip() +
-  labs(
-    x = NULL,
-    y = expression(Log[2](OR))
-  ) +
-  theme_classic(base_size = 11) +
-  theme(
-    axis.text.y = element_blank(),
-    axis.ticks.y = element_blank(),
-    axis.line.y = element_blank(),
-    axis.text.x = element_text(size = 9, color = "black"),
-    axis.title.x = element_text(size = 10),
-    panel.grid.major.x = element_line(color = "grey85", linewidth = 0.3),
-    panel.grid.minor.x = element_blank(),
-    axis.line.x = element_line(color = "black", linewidth = 0.5),
-    plot.margin = margin(5, 5, 5, 1)
-  )
-
-# Combine TFBS panels
-combined_tfbs <- p_tfbs_left + plot_spacer() + p_tfbs_right + 
-  plot_layout(widths = c(1.3, 0.05, 1)) +
-  plot_annotation(
-    title = "Probe enrichment for transcription factor binding sites (top 25)"
-  )
-
-print(combined_tfbs)
-
-ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_transcription_factor_binding_site_enrichment.png", combined_tfbs, width = 10, height = 6, dpi = 300)
-
+# Save all TFBS results regardless
 write.csv(tfbs_annotated, 
           "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_tfbs_enrichment_results.csv",
           row.names = FALSE)
@@ -444,7 +459,7 @@ if (nrow(tissue_sig) > 0) {
          combined_tissue, width = 10, height = 6, dpi = 300)
   
 } else {
-  cat("No significant tissue enrichment found at p < 0.05 with overlap > 1\n")
+  cat("No significant tissue enrichment (TiSigLoyfer) found at p < 0.05 with overlap > 1\n")
   cat("Top tissues by p-value:\n")
   print(tissue_annotated %>% 
           filter(overlap > 0) %>% 
@@ -567,7 +582,7 @@ if (nrow(tissue_sig) > 0) {
          combined_tissue, width = 10, height = 6, dpi = 300)
   
 } else {
-  cat("No significant tissue enrichment found at p < 0.05 with overlap > 1\n")
+  cat("No significant tissue enrichment (TiSigBLUEPRINT) found at p < 0.05 with overlap > 1\n")
   cat("Top tissues by p-value:\n")
   print(tissue_annotated %>% 
           filter(overlap > 0) %>% 
@@ -708,8 +723,21 @@ write.csv(cgi_annotated,
 proximity_res <- testProbeProximity(query_cpgs, platform="MSA")
 print(proximity_res)
 
+# Handle inconsistent column naming (P.val vs p.val - changes based on significance!)
+p_value <- if ("P.val" %in% names(proximity_res$Stats)) {
+  proximity_res$Stats$P.val
+} else if ("p.val" %in% names(proximity_res$Stats)) {
+  proximity_res$Stats$p.val
+} else {
+  NA
+}
+
 # Check if clustering is significant
-has_sig_cluster <- proximity_res$Stats$P.val < 0.05
+# When significant: proximity_res$Clusters is a data frame
+# When not significant: proximity_res$Clusters is NA
+has_sig_cluster <- !is.na(p_value) && 
+  p_value < 0.05 &&
+  is.data.frame(proximity_res$Clusters)
 
 # Step 1: Get annotations for CpGs
 anno <- sesameData_getManifestGRanges("MSA")
@@ -757,7 +785,7 @@ if (has_sig_cluster) {
     mutate(in_cluster = FALSE)
   
   cluster_cpgs <- data.frame()  # Empty dataframe
-  cat("No significant clustering detected (P =", proximity_res$Stats$P.val, ")\n")
+  cat("No significant clustering detected (P =", p_value, ")\n")
 }
 
 # Step 2: Plot CpG distribution across chromosomes
@@ -784,12 +812,12 @@ cpg_genomic_proximity <- ggplot(cpg_summary, aes(x = seqnames, y = n_cpgs, fill 
   scale_x_discrete(expand = expansion(add = c(3, 3))) +  # Add padding on both sides
   labs(x = "Chromosome", y = "Number of CpGs",
        title = "Distribution of Hypermethylated CpGs Across Chromosomes",
-       subtitle = paste0("Spatial clustering P = ", format(proximity_res$Stats$P.val, digits = 3))) +
+       subtitle = paste0("Spatial clustering P = ", format(p_value, digits = 3))) +
   theme_minimal(base_size = 12) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Only add cluster annotations if significant clustering found
-if (has_sig_cluster && nrow(cluster_cpgs) > 0) {
+if (has_sig_cluster) {
   
   # Get the chromosome with the cluster for annotation positioning
   cluster_chr <- as.character(cluster_cpgs$seqnames[1])
@@ -896,8 +924,8 @@ if (has_sig_cluster && nrow(cluster_cpgs) > 0) {
   }
 }
 
-# Step 3 Get genes near the cluster CpGs
-if (has_sig_cluster && nrow(cluster_cpgs) > 0) {
+# Step 3: Get genes near the cluster CpGs
+if (has_sig_cluster) {
   gene_dbs <- buildGeneDBs(cluster_cpgs$CpG, platform = "MSA")
   gene_res <- testEnrichment(cluster_cpgs$CpG, gene_dbs, platform = "MSA")
   
@@ -912,7 +940,7 @@ if (has_sig_cluster && nrow(cluster_cpgs) > 0) {
 
 print(cpg_genomic_proximity)
 
-ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_cpg_genomic_proximity.png", 
+ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/DunedinPACE_cpg_genomic_proximity.png", 
        cpg_genomic_proximity, 
        width = 10, 
        height = 6, 
@@ -921,30 +949,30 @@ ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethyl
 # Save the test statistics
 proximity_stats <- data.frame(
   test = "Genomic Proximity",
-  p_value = proximity_res$Stats$P.val,
+  p_value = p_value,
   n_cpgs = length(query_cpgs),
   significant_clustering = has_sig_cluster
 )
 
 write.csv(proximity_stats, 
-          "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_proximity_test_results.csv",
+          "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/DunedinPACE_proximity_test_results.csv",
           row.names = FALSE)
 
 # Save chromosome distribution
 write.csv(cpg_summary, 
-          "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_cpg_chromosome_distribution.csv",
+          "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/DunedinPACE_cpg_chromosome_distribution.csv",
           row.names = FALSE)
 
 # If significant clustering found, save cluster details
-if (has_sig_cluster && nrow(cluster_cpgs) > 0) {
+if (has_sig_cluster) {
   write.csv(cluster_cpgs, 
-            "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_cpg_cluster_details.csv",
+            "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/DunedinPACE_cpg_cluster_details.csv",
             row.names = FALSE)
   
   # Save cluster-associated genes if they exist
   if (exists("cluster_genes")) {
     write.csv(cluster_genes, 
-              "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_cluster_associated_genes.csv",
+              "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/DunedinPACE_cluster_associated_genes.csv",
               row.names = FALSE)
   }
 }
@@ -998,16 +1026,39 @@ metagene_df <- metagene_res %>%
 # Display results
 print(metagene_df %>% select(region_label, estimate, overlap, p.value, FDR))
 
-# Visualize gene regions with actual labels
-p_metagene <- ggplot(metagene_df, aes(x = region_order, y = -log10(FDR))) +
+# Check if any regions have FDR < 0.05
+has_fdr_sig <- any(metagene_df$FDR < 0.05, na.rm = TRUE)
+
+# Determine which y-axis to use
+if (has_fdr_sig) {
+  # Use FDR if there are significant results
+  metagene_df <- metagene_df %>%
+    mutate(y_value = -log10(FDR))
+  
+  y_label <- expression(-Log[10](FDR))
+  hline_value <- -log10(0.05)
+  subtitle_text <- "Location relative to gene structure"
+  
+} else {
+  # Use p-value if no FDR significant results
+  metagene_df <- metagene_df %>%
+    mutate(y_value = -log10(p.value))
+  
+  y_label <- expression(-Log[10](italic(P)~value))
+  hline_value <- -log10(0.05)
+  subtitle_text <- "Location relative to gene structure (No significant enrichment after FDR correction)"
+}
+
+# Visualize gene regions with conditional y-axis
+p_metagene <- ggplot(metagene_df, aes(x = region_order, y = y_value)) +
   geom_col(fill = "gray60", color = "black", width = 0.7) +
   geom_text(aes(label = overlap), vjust = -0.5, size = 3) +
-  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red") +
+  geom_hline(yintercept = hline_value, linetype = "dashed", color = "red") +
   labs(
     title = "Gene Region Enrichment",
-    subtitle = "Location relative to gene structure",
+    subtitle = subtitle_text,
     x = "Gene Region",
-    y = "-log10(FDR)"
+    y = y_label
   ) +
   theme_bw(base_size = 11) +
   theme(
@@ -1023,4 +1074,3 @@ ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethyl
 write.csv(metagene_df, 
           "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_metagene_enrichment_results.csv",
           row.names = FALSE)
-
