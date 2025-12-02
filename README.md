@@ -5,20 +5,18 @@
 # Differential methylation analysis workflow
 - *steps 4) and 5) require cell type proportions from cell_type_deconvolution_EpiDISH.R*
 1) Impute betas from 450k array: **mliftover_impute_betas.R**
-2) Run differential methylation analysis of DunedinPACE by genetic ancestry: **DML_DunedinPACE.R**
-3) Run differential methylation analysis of Horvath clock by genetic ancestry: **DML_Horvath.R**
-4) Run differential methylation analysis of DunedinPACE by genetic ancestry, covarying for cell type proportions: **DML_DunedinPACE_cell_type_props_adjusted.R**
-5) Run differential methylation analysis of Horvath clock by genetic ancestry, covarying for cell type proportions: **DML_Horvath_cell_type_props_adjusted.R**
-6) Analyse impact of cell type adjustment on differential methylation analyses: **DML_analyse_impact_of_cell_type_adjustment.R**
+2) Run differential methylation analysis of DunedinPACE and Horvath clocks by genetic ancestry: **DML_DunedinPACE.R** and **DML_Horvath.R**
+3) Run differential methylation analysis of DunedinPACE and Horvath clocks by genetic ancestry, covarying for cell type proportions: **DML_DunedinPACE_cell_type_props_adjusted.R** and **DML_Horvath_cell_type_props_adjusted.R**
+4) Analyse impact of cell type adjustment on differential methylation analyses: **DML_analyse_impact_of_cell_type_adjustment.R**
 
 # Probe enrichment analysis workflow
  - *requires cpgs from differential methylation analysis*
-1) **to be updated** Run gene enrichment analysis of differentially methylated cpgs using KnowYourCG and query enriched genes in GWAS Catalog: **gene_enrichment_analysis_with_GWASCatalog.R**
+1) **to be updated** Run gene enrichment analysis of differentially methylated cpgs using KnowYourCG and query enriched genes in GWAS Catalog: **gene_enrichment_analysis_with_GWASCatalog_DunedinPACE.R** and **gene_enrichment_analysis_with_GWASCatalog_Horvath.R**
    - Use dev version of KnowYourCG and MSA platform
-3) **to be updated** Run pathway analysis of genes enriched for differentially methylated cpgs: **pathway_analysis.R**
+2) **to be updated** Run pathway analysis of genes enriched for differentially methylated cpgs: **pathway_analysis_DunedinPACE.R** and **pathway_analysis_Horvath.R**
    - *requires genes from gene enrichment analysis*
    - Use dev version of KnowYourCG and MSA platform
-4) **to be updated** Run probe enrichment analyses of differentially methylated probes: **probe_enrichment_analysis.R**
+3) **to be updated** Run probe enrichment analyses of differentially methylated probes: **probe_enrichment_analysis_DunedinPACE.R** and **probe_enrichment_analysis_Horvath.R**
    - Use dev version of KnowYourCG and MSA platform
    - Add TI sig enrichment
 
