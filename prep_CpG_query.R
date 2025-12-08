@@ -122,8 +122,8 @@ lookup_multiple_cpgs <- function(cpg_list, manifest = NULL) {
 # only select CpGs that are significantly hypermethylated in African Ancestry at FDR < 0.05 in unadjusted and adjusted (for cell type proportion) analyses
 # These are the blue dots in the Δβ Change of Clock CpGs by Genetic Ancestry after Cell Type Adjustment plot
 dmp_cpgs <- read.csv('/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251126_DunedinPACE_adjusted_vs_unadjusted_comparison.csv') %>%
-  filter(Ancestry_unadj == "Higher in AFR" & Ancestry_adj == "Higher in AFR") %>%
-  filter(adj.P.Val_unadj < 0.05 & adj.P.Val_adj < 0.05)
+  filter(Ancestry_adj == "Higher in AFR") %>%
+  filter(adj.P.Val_adj < 0.05)
 
 # Get MSA manifest IDs ####
 # Match CpGs to MSA format (with suffix like _TC21, _BC11, etc.) from manifest
@@ -133,5 +133,5 @@ positions <- lookup_multiple_cpgs(dmp_cpgs$CpG, manifest)
 query_cpgs <- positions$Manifest_ID
 
 # Save
-saveRDS(query_cpgs, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20250201_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
+saveRDS(query_cpgs, "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251208_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
 
