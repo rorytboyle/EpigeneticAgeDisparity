@@ -4,6 +4,7 @@
 # Author: Rory Boyle & Nadia Dehghani rorytboyle@gmail.com
 # Date: 19th November 2025
 # Updated: 1st December 2025 to use development version of KnowYourCG and use MSA platform
+# Updated: 8th December 2025 to fix text label positioning for narrow bars & fix bug in transcription factor binding site enrichment analysis
 
 # Note: This requires the development version of knowYourCG from GitHub: BiocManager::install('zhou-lab/knowYourCG')
 # This may require clean up before you can install successfully. If you get an error installing the dev version, try below:
@@ -38,7 +39,7 @@ sesameDataCache()
 # Read in CpGs that are significantly hypermethylated in African Ancestry at FDR < 0.05 in unadjusted and adjusted (for cell type proportion) analyses
 # These are the blue dots in the Δβ Change of Clock CpGs by Genetic Ancestry after Cell Type Adjustment plot
 # ~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/code/prep_CpG_query_DunedinPACE.R
-query_cpgs <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20250201_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
+query_cpgs <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251208_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
 
 cat(sprintf("Analyzing %d significant CpGs\n", length(query_cpgs)))
 
@@ -160,9 +161,14 @@ chrom_sig <- chrom_res %>%
 p_chrom_left <- ggplot(chrom_sig, aes(x = state_order, y = log10_p_plot)) +
   geom_col(aes(fill = hex_color), color = "black", width = 0.85, linewidth = 0.2) +
   scale_fill_identity() +
-  geom_text(data = filter(chrom_sig, overlap > 0),
+  # Text inside bar (for wider bars)
+  geom_text(data = filter(chrom_sig, overlap > 0, log10_p_plot >= 0.5),
             aes(label = paste0("N = ", overlap)), 
             hjust = 1.1, size = 3, color = "black", fontface = "bold") +
+  # Text outside bar (for narrow bars)
+  geom_text(data = filter(chrom_sig, overlap > 0, log10_p_plot < 0.5),
+            aes(label = paste0("N = ", overlap)), 
+            hjust = -0.1, size = 3, color = "black", fontface = "bold") +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red", linewidth = 0.5) +
   scale_y_continuous(
     expand = expansion(mult = c(0, 0.05)),
@@ -213,8 +219,13 @@ write.csv(chrom_res_annotated,
           row.names = FALSE)
 
 # Probe enrichment for transcription factor binding sites ####
-tfbs_res <- testEnrichment(query_cpgs, platform="MSA", databases = "KYCG.MSA.TFBSrm.20221005") 
+# Load the TFBS database directly from your local file
+load("~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/MSA_KYCG_Knowledgebases/KYCG.MSA.TFBSrm.20221005.rda")
 
+# Now use the local database
+tfbs_res <- testEnrichment(query_cpgs, 
+                           platform="MSA", 
+                           databases = KYCG.MSA.TFBSrm.20221005)
 # Annotate transcription factor binding sites
 annotate_tfbs_results <- function(enrichment_results,
                                   db_path = "~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/MSA_KYCG_Knowledgebases/KYCG.MSA.TFBSrm.20221005.rda") {
@@ -252,7 +263,7 @@ tfbs_annotated <- annotate_tfbs_results(tfbs_res)
 
 tfbs_sig <- tfbs_annotated %>%
   as.data.frame() %>%
-  filter(FDR < 0.05) %>% 
+  filter(p.value < 0.05) %>% 
   filter(overlap > 1) %>%
   arrange(p.value) %>%
   slice_head(n = 25) %>% # Top 25 for visibility
@@ -268,15 +279,18 @@ tfbs_sig <- tfbs_annotated %>%
 # Check if there are any significant results
 if (nrow(tfbs_sig) > 0) {
   
-  # Left panel: P-values with N labels embedded in bars
+  # Left panel: P-values with N labels
   p_tfbs_left <- ggplot(tfbs_sig, aes(x = tf_order, y = log10_p)) +
     geom_col(fill = "grey40", color = "black", width = 0.85, linewidth = 0.2) +
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
-    geom_text(aes(label = n_label), 
-              hjust = 1.1,
-              size = 3,
-              color = "white",
-              fontface = "bold") +
+    # Text inside bar (for wider bars)
+    geom_text(data = filter(tfbs_sig, log10_p >= 0.5),
+              aes(label = n_label), 
+              hjust = 1.1, size = 3, color = "white", fontface = "bold") +
+    # Text outside bar (for narrow bars)
+    geom_text(data = filter(tfbs_sig, log10_p < 0.5),
+              aes(label = n_label), 
+              hjust = -0.1, size = 3, color = "black", fontface = "bold") +
     scale_y_continuous(
       expand = expansion(mult = c(0, 0.05)),
       breaks = c(0, 2, 4, 6, 8, 10),
@@ -398,11 +412,14 @@ if (nrow(tissue_sig) > 0) {
   p_tissue_left <- ggplot(tissue_sig, aes(x = tissue_order, y = log10_p)) +
     geom_col(fill = "steelblue", color = "black", width = 0.85, linewidth = 0.2) +
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
-    geom_text(aes(label = n_label), 
-              hjust = 1.1,
-              size = 3,
-              color = "white",
-              fontface = "bold") +
+    # Text inside bar (for wider bars)
+    geom_text(data = filter(tissue_sig, log10_p >= 0.5),
+              aes(label = n_label), 
+              hjust = 1.1, size = 3, color = "white", fontface = "bold") +
+    # Text outside bar (for narrow bars)
+    geom_text(data = filter(tissue_sig, log10_p < 0.5),
+              aes(label = n_label), 
+              hjust = -0.1, size = 3, color = "black", fontface = "bold") +
     scale_y_continuous(
       expand = expansion(mult = c(0, 0.05))
     ) +
@@ -521,11 +538,14 @@ if (nrow(tissue_sig) > 0) {
   p_tissue_left <- ggplot(tissue_sig, aes(x = tissue_order, y = log10_p)) +
     geom_col(fill = "steelblue", color = "black", width = 0.85, linewidth = 0.2) +
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
-    geom_text(aes(label = n_label), 
-              hjust = 1.1,
-              size = 3,
-              color = "white",
-              fontface = "bold") +
+    # Text inside bar (for wider bars)
+    geom_text(data = filter(tissue_sig, log10_p >= 0.5),
+              aes(label = n_label), 
+              hjust = 1.1, size = 3, color = "white", fontface = "bold") +
+    # Text outside bar (for narrow bars)
+    geom_text(data = filter(tissue_sig, log10_p < 0.5),
+              aes(label = n_label), 
+              hjust = -0.1, size = 3, color = "black", fontface = "bold") +
     scale_y_continuous(
       expand = expansion(mult = c(0, 0.05))
     ) +
