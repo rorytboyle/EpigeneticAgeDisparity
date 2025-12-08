@@ -4,8 +4,9 @@
 # Author: Rory Boyle & Nadia Dehghani rorytboyle@gmail.com
 # Date: 19th November 2025
 # Updated: 1st December 2025 to use development version of KnowYourCG and use MSA platform
-# Updated: 8th December 2025 to fix text label positioning for narrow bars & fix bug in transcription factor binding site enrichment analysis
+# Updated: 8th December 2025 to fix text label positioning for narrow bars with dynamic threshold & fix bug in transcription factor binding site enrichment analysis
 
+# Set up ####
 # Note: This requires the development version of knowYourCG from GitHub: BiocManager::install('zhou-lab/knowYourCG')
 # This may require clean up before you can install successfully. If you get an error installing the dev version, try below:
 # # 1. Find all potentially corrupted packages
@@ -36,12 +37,22 @@ set.seed(123)
 sesameDataCache()
 
 # Load your differential methylation results 
-# Read in CpGs that are significantly hypermethylated in African Ancestry at FDR < 0.05 in unadjusted and adjusted (for cell type proportion) analyses
-# These are the blue dots in the Δβ Change of Clock CpGs by Genetic Ancestry after Cell Type Adjustment plot
+# Read in CpGs that are significantly hypermethylated in African Ancestry at FDR < 0.05 when adjusted for cell type proportion analyses
 # ~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/code/prep_CpG_query_DunedinPACE.R
 query_cpgs <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251208_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
 
 cat(sprintf("Analyzing %d significant CpGs\n", length(query_cpgs)))
+
+# Create helper function to ensure that overlap labels always correctly plotted on bar plots
+# Dynamic threshold calculation function
+calculate_label_threshold <- function(log10_p_values, min_bar_width_fraction = 0.15) {
+  # Calculate threshold as a fraction of the maximum -log10(p) value
+  # This ensures text fits inside bars that are at least X% of the max height
+  max_log10p <- max(log10_p_values, na.rm = TRUE)
+  threshold <- max_log10p * min_bar_width_fraction
+  return(threshold)
+}
+
 
 # Probe enrichment for chromatin states ####
 chrom_res <- testEnrichment(query_cpgs, platform="MSA", databases = "MSA.ChromHMM.20220303")
@@ -158,15 +169,17 @@ chrom_sig <- chrom_res %>%
   )
 
 # Two-panel plot with chromHMM colors
+chrom_threshold <- calculate_label_threshold(chrom_sig$log10_p_plot)
+
 p_chrom_left <- ggplot(chrom_sig, aes(x = state_order, y = log10_p_plot)) +
   geom_col(aes(fill = hex_color), color = "black", width = 0.85, linewidth = 0.2) +
   scale_fill_identity() +
   # Text inside bar (for wider bars)
-  geom_text(data = filter(chrom_sig, overlap > 0, log10_p_plot >= 0.5),
+  geom_text(data = filter(chrom_sig, overlap > 0, log10_p_plot >= chrom_threshold),
             aes(label = paste0("N = ", overlap)), 
             hjust = 1.1, size = 3, color = "black", fontface = "bold") +
   # Text outside bar (for narrow bars)
-  geom_text(data = filter(chrom_sig, overlap > 0, log10_p_plot < 0.5),
+  geom_text(data = filter(chrom_sig, overlap > 0, log10_p_plot < chrom_threshold),
             aes(label = paste0("N = ", overlap)), 
             hjust = -0.1, size = 3, color = "black", fontface = "bold") +
   geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "red", linewidth = 0.5) +
@@ -219,13 +232,8 @@ write.csv(chrom_res_annotated,
           row.names = FALSE)
 
 # Probe enrichment for transcription factor binding sites ####
-# Load the TFBS database directly from your local file
-load("~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/MSA_KYCG_Knowledgebases/KYCG.MSA.TFBSrm.20221005.rda")
+tfbs_res <- testEnrichment(query_cpgs, platform="MSA", databases = "KYCG.MSA.TFBSrm.20221005") 
 
-# Now use the local database
-tfbs_res <- testEnrichment(query_cpgs, 
-                           platform="MSA", 
-                           databases = KYCG.MSA.TFBSrm.20221005)
 # Annotate transcription factor binding sites
 annotate_tfbs_results <- function(enrichment_results,
                                   db_path = "~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/MSA_KYCG_Knowledgebases/KYCG.MSA.TFBSrm.20221005.rda") {
@@ -263,7 +271,7 @@ tfbs_annotated <- annotate_tfbs_results(tfbs_res)
 
 tfbs_sig <- tfbs_annotated %>%
   as.data.frame() %>%
-  filter(p.value < 0.05) %>% 
+  filter(p.value < 0.05) %>% # plot nominally significant (bolded by FDR)
   filter(overlap > 1) %>%
   arrange(p.value) %>%
   slice_head(n = 25) %>% # Top 25 for visibility
@@ -279,16 +287,17 @@ tfbs_sig <- tfbs_annotated %>%
 # Check if there are any significant results
 if (nrow(tfbs_sig) > 0) {
   
-  # Left panel: P-values with N labels
+  tfbs_threshold <- calculate_label_threshold(tfbs_sig$log10_p)
+  
   p_tfbs_left <- ggplot(tfbs_sig, aes(x = tf_order, y = log10_p)) +
     geom_col(fill = "grey40", color = "black", width = 0.85, linewidth = 0.2) +
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
     # Text inside bar (for wider bars)
-    geom_text(data = filter(tfbs_sig, log10_p >= 0.5),
+    geom_text(data = filter(tfbs_sig, log10_p >= tfbs_threshold),
               aes(label = n_label), 
               hjust = 1.1, size = 3, color = "white", fontface = "bold") +
     # Text outside bar (for narrow bars)
-    geom_text(data = filter(tfbs_sig, log10_p < 0.5),
+    geom_text(data = filter(tfbs_sig, log10_p < tfbs_threshold),
               aes(label = n_label), 
               hjust = -0.1, size = 3, color = "black", fontface = "bold") +
     scale_y_continuous(
@@ -408,16 +417,17 @@ tissue_sig <- tissue_annotated %>%
 # Check if there are any significant results
 if (nrow(tissue_sig) > 0) {
   
-  # Left panel: P-values with N labels
+  tissue_threshold <- calculate_label_threshold(tissue_sig$log10_p)
+  
   p_tissue_left <- ggplot(tissue_sig, aes(x = tissue_order, y = log10_p)) +
     geom_col(fill = "steelblue", color = "black", width = 0.85, linewidth = 0.2) +
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
     # Text inside bar (for wider bars)
-    geom_text(data = filter(tissue_sig, log10_p >= 0.5),
+    geom_text(data = filter(tissue_sig, log10_p >= tissue_threshold),
               aes(label = n_label), 
               hjust = 1.1, size = 3, color = "white", fontface = "bold") +
     # Text outside bar (for narrow bars)
-    geom_text(data = filter(tissue_sig, log10_p < 0.5),
+    geom_text(data = filter(tissue_sig, log10_p < tissue_threshold),
               aes(label = n_label), 
               hjust = -0.1, size = 3, color = "black", fontface = "bold") +
     scale_y_continuous(
@@ -534,16 +544,17 @@ tissue_sig <- tissue_annotated %>%
 # Check if there are any significant results
 if (nrow(tissue_sig) > 0) {
   
-  # Left panel: P-values with N labels
+  tissue_threshold <- calculate_label_threshold(tissue_sig$log10_p)
+  
   p_tissue_left <- ggplot(tissue_sig, aes(x = tissue_order, y = log10_p)) +
     geom_col(fill = "steelblue", color = "black", width = 0.85, linewidth = 0.2) +
     geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed", linewidth = 0.8) +
     # Text inside bar (for wider bars)
-    geom_text(data = filter(tissue_sig, log10_p >= 0.5),
+    geom_text(data = filter(tissue_sig, log10_p >= tissue_threshold),
               aes(label = n_label), 
               hjust = 1.1, size = 3, color = "white", fontface = "bold") +
     # Text outside bar (for narrow bars)
-    geom_text(data = filter(tissue_sig, log10_p < 0.5),
+    geom_text(data = filter(tissue_sig, log10_p < tissue_threshold),
               aes(label = n_label), 
               hjust = -0.1, size = 3, color = "black", fontface = "bold") +
     scale_y_continuous(
