@@ -37,8 +37,7 @@ set.seed(123)
 sesameDataCache()
 
 # Load your differential methylation results 
-# Read in CpGs that are significantly hypermethylated in African Ancestry at FDR < 0.05 in unadjusted and adjusted (for cell type proportion) analyses
-# These are the blue dots in the Δβ Change of Clock CpGs by Genetic Ancestry after Cell Type Adjustment plot
+# Read in CpGs that are significantly hypermethylated in African Ancestry at FDR < 0.05 when adjusted for cell type proportion analyses
 # ~/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/code/prep_CpG_query_Horvath.R
 query_cpgs <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251208_hypermethylated_Horvath_CpGs_African_Ancestry.rds")
 
