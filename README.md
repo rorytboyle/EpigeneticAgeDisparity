@@ -15,6 +15,7 @@
 2) Run pathway analysis of genes enriched for differentially methylated cpgs: **pathway_analysis_DunedinPACE.R** and **pathway_analysis_Horvath.R**
    - *requires genes from gene enrichment analysis*
 3) Run probe enrichment analyses of differentially methylated probes: **probe_enrichment_analysis_DunedinPACE.R** and **probe_enrichment_analysis_Horvath.R**
+4) Annotate volcano plot from differential methylation analysis for enriched genes associated with neurodegenerative traits: **DML_volcano_plot_annotated_genes_DunedinPACE.R** and **DML_volcano_plot_annotated_genes_Horvath.R**
 
 # mQTL analysis workflow
 1) Get genomic location of identified CpGs: **get_windows.R**
