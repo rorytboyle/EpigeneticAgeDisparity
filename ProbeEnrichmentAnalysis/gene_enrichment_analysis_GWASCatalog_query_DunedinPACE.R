@@ -3,6 +3,7 @@
 # Author: Rory Boyle rorytboyle@gmail.com
 # Date: 14/11/2025
 # Updated: 2nd December 2025 to use development version of KnowYourCG and use MSA platform
+# Updated: 9th December 2025 to update cpg list and to fix sig_genes_plot (to plot top 25 enriched genes instead of all)
 
 # Note: This requires the development version of knowYourCG from GitHub: BiocManager::install('zhou-lab/knowYourCG')
 # This may require clean up before you can install successfully. If you get an error installing the dev version, try below:
@@ -31,7 +32,7 @@ library(gprofiler2)
 sesameDataCache()
 
 # Load your differential methylation results
-query_cpgs <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20250201_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
+query_cpgs <- readRDS("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/20251208_hypermethylated_DunedinPACE_CpGs_African_Ancestry.rds")
 
 cat(sprintf("Analyzing %d significant CpGs\n", length(query_cpgs)))
 
@@ -53,9 +54,9 @@ cat(sprintf("Found %d significantly enriched genes (FDR < 0.05)\n", nrow(sig_gen
 
 ## Make plot for all FDR sig genes ####
 sig_genes_plot <- sig_genes %>%
-  # No filter because plotting all significant genes
-  # Prepare plotting variables
-  mutate(
+  # Filter for top 25
+  slice_max(order_by = -log10.p.value, n = 25) %>%
+    mutate(
     gene_label = gene_name, 
     n_label = paste0("N = ", overlap),
     log2_OR = log2(estimate),
@@ -121,7 +122,7 @@ p_gene_right <- ggplot(sig_genes_plot, aes(x = gene_order, y = log2_OR)) +
 combined_genes <- p_gene_left + plot_spacer() + p_gene_right + 
   plot_layout(widths = c(1.3, 0.05, 1)) +
   plot_annotation(
-    title = "Probe enrichment for genes"
+    title = "Probe enrichment for genes (top 25 by -Log10 p-value)"
   )
 
 ggsave("/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/DunedinPACE_gene_enrichment_analysis_overlap_all.png", 
