@@ -161,32 +161,3 @@ print(pathway_table)
 ggsave(pathway_table, 
        filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_top20_enriched_pathways_hg38.png", 
        width = 8, height = 6, dpi = 300)
-
-# Examine specific pathway (Fatty acid biosynthesis as it is role of ECH...) ####
-# # Highlight fatty acid synthesis
-# # Highlight specific pathway(s) by their term ID
-# # Find the term ID for your pathway of interest first
-# # pathway_of_interest <- sig_pathways %>%
-# #   filter(grepl("fatty acid biosynthesis", term_name, ignore.case = TRUE))
-# 
-# # View the term_id
-# # print(pathway_of_interest$term_id)
-# 
-# # Visualize pathways
-# # p_pathway_fatty_acid <- gostplot(pathway_res, capped = F, interactive = F)
-# # print(p_pathway_fatty_acid)
-# 
-# # # Highlight it on the plot
-# # p_highlighted <- publish_gostplot(
-# #   p_pathway_fatty_acid,
-# #   highlight_terms = pathway_of_interest$term_id,  # Can be a vector of multiple IDs
-# #   width = 8,
-# #   height = 6
-# # )
-# 
-# # print(p_highlighted)
-# 
-# # # Save
-# # ggsave(p_highlighted, 
-# #        filename = "/Users/rorytb/Library/CloudStorage/Box-Box/PennMedicineBiobank/DNAmethylation/results/Horvath_enriched_pathways_highlight_fatty_acid_hg38.png", 
-# #        width = 8, height = 6, dpi = 300)
