@@ -205,7 +205,7 @@ p_gene_right_overlap_greaterThan1 <- ggplot(sig_genes_plot_overlap_greaterThan1,
 combined_genes_overlap_greaterThan1 <- p_gene_left_overlap_greaterThan1 + plot_spacer() + p_gene_right_overlap_greaterThan1 + 
   plot_layout(widths = c(1.3, 0.05, 1)) +
   plot_annotation(
-    title = "Probe enrichment for genes"
+    title = "Probe enrichment for genes (overlap >= 2 significant CpGs)"
   )
 
 print(combined_genes_overlap_greaterThan1) # is filtering to overlap = 2 ok?
