@@ -13,7 +13,6 @@ my_genes <- gene_res %>%
   as.data.frame() %>%
   filter(FDR < 0.05) %>%
   arrange(FDR) %>%
-  # Filter 1): Keep only genes hit by more than one significant CpG
   filter(overlap > 1)
 
 my_genes <- my_genes$gene_name
@@ -96,7 +95,7 @@ if (!is.null(pathway_res$result)) {
     ) %>%
     arrange(p_value)
   
-  cat(sprintf("\nFound %d significant pathways (p < 0.05, term size 10-500)\n", 
+  cat(sprintf("\nFound %d significant pathways (p < 0.05)\n", 
               nrow(sig_pathways)))
   
   if (nrow(sig_pathways) > 0) {
@@ -109,7 +108,7 @@ if (!is.null(pathway_res$result)) {
 
     
   } else {
-    cat("\nNo pathways passed filtering criteria (p < 0.05, term size 10-500)\n")
+    cat("\nNo pathways passed filtering criteria (p < 0.05)\n")
   }
   
 } else {
